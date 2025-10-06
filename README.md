@@ -1,7 +1,7 @@
 # QuantumOS - Revolutionary Operating System
 
 
-<img width="1024" height="1024" alt="a graphical boot ban" src="https://github.com/user-attachments/assets/258b7e49-0d7c-4bba-abfe-cc03b783bafd" />
+<img width="800" height="800" alt="a graphical boot ban" src="https://github.com/user-attachments/assets/258b7e49-0d7c-4bba-abfe-cc03b783bafd" />
 
 ## Overview
 QuantumOS is a groundbreaking operating system that integrates four revolutionary technologies:
