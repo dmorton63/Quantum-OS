@@ -189,7 +189,17 @@ proprietary systems, or use in monetized platforms — requires explicit
 written permission from the author.
 
 To request a commercial license, contact:
-📧 david.k.Morton.quantumos@yourdomain.com
+David K. Morton
+dmorton63@gmail.com
+📧 public domain pending.
+#  📧 david.k.quantumos@yourdomain.com
+
+All commercial licenses will include:
+- Attribution requirements
+- Usage boundaries
+- Optional support or customization terms
+
+QuantumOS must always speak with intention. Its legacy must be honored.
 
 All commercial licenses will include:
 - Attribution requirements
