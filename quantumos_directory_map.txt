@@ -1,0 +1,71 @@
+.
+├── Makefile
+├── README.md
+├── boot
+│   └── boot.asm
+├── build
+│   ├── boot
+│   ├── iso
+│   │   └── boot
+│   ├── kernel
+│   │   ├── ai
+│   │   ├── core
+│   │   ├── parallel
+│   │   ├── quantum
+│   │   └── security
+│   ├── kernel.bin
+│   ├── kernel.elf
+│   └── quantum_os.iso
+├── docs
+│   ├── api
+│   ├── architecture
+│   │   └── overview.md
+│   ├── implementation
+│   ├── security
+│   └── specifications
+├── drivers
+│   ├── ai
+│   ├── parallel
+│   └── quantum
+├── examples
+├── kernel
+│   ├── ai
+│   │   ├── ai_subsystem.c
+│   │   └── ai_subsystem.h
+│   ├── core
+│   │   ├── boot_stub.asm
+│   │   ├── console.c
+│   │   ├── gdt.c
+│   │   ├── gdt_flush.asm
+│   │   ├── idt.c
+│   │   ├── interrupts.c
+│   │   ├── interrupts_asm.asm
+│   │   ├── kernel.c
+│   │   ├── kernel.h
+│   │   └── memory.c
+│   ├── kernel_types.h
+│   ├── linker.ld
+│   ├── parallel
+│   │   ├── parallel_engine.c
+│   │   └── parallel_engine.h
+│   ├── quantum
+│   │   ├── quantum_kernel.c
+│   │   └── quantum_kernel.h
+│   └── security
+│       ├── security_manager.c
+│       └── security_manager.h
+├── libs
+│   ├── ai
+│   ├── parallel
+│   └── quantum
+├── quantumos_directory_map.txt
+├── tests
+│   ├── integration
+│   ├── quantum
+│   └── unit
+└── tools
+    ├── build
+    ├── debug
+    └── quantum
+
+41 directories, 28 files

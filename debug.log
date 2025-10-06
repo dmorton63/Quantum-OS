@@ -1,0 +1,15 @@
+BOOTEAX:2BAD003A EBX:00010000
+MB_MAGIC: 2BADB002 EXP: 2BADB002
+MB_ASSIGN: Before assignment, mbi=00010000 g_multiboot_info=00000000
+MB_ASSIGN: After assignment, g_multiboot_info=00010000
+MB_ASSIGN: Readback test, readback=00010000
+MB_INFO: OK
+MB_FB: Flag present, parsing...
+MB_FB: Raw 64-bit addr: 00000000000B8000
+MB_FB: Resolution: 00000050x00000019x00000010
+MB_FB: Pitch: 000000A0
+MB_FB: Using addr: 000B8000
+MB_FB: Updating display with addr: FD000000
+MB_FB: Display updated!
+MB_FB: Attempting framebuffer mapping...
+MB_FB: Framebuffer mapping successful

@@ -1,0 +1,292 @@
+#include "keyboard.h"
+#include "../shell/shell.h"
+#include "command.h"
+#include "../graphics/graphics.h"
+#include "../core/io.h"
+
+// Global keyboard state
+static const char scancode_to_ascii_lower[128] = {
+    0,    27,   '1',  '2',  '3',  '4',  '5',  '6',  '7',  '8',  '9',  '0',  '-',  '=',  '\b', '\t', // 0x00-0x0F
+    'q',  'w',  'e',  'r',  't',  'y',  'u',  'i',  'o',  'p',  '[',  ']',  '\n', 0,    'a',  's',  // 0x10-0x1F
+    'd',  'f',  'g',  'h',  'j',  'k',  'l',  ';',  '\'', '`',  0,    '\\', 'z',  'x',  'c',  'v',  // 0x20-0x2F
+    'b',  'n',  'm',  ',',  '.',  '/',  0,    '*',  0,    ' ',  0,    0,    0,    0,    0,    0,    // 0x30-0x3F
+    0,    0,    0,    0,    0,    0,    0,    '7',  '8',  '9',  '-',  '4',  '5',  '6',  '+',  '1',  // 0x40-0x4F
+    '2',  '3',  '0',  '.',  0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    // 0x50-0x5F
+    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    // 0x60-0x6F
+    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0     // 0x70-0x7F
+};
+
+static const char scancode_to_ascii_upper[128] = {
+    0,    27,   '!',  '@',  '#',  '$',  '%',  '^',  '&',  '*',  '(',  ')',  '_',  '+',  '\b', '\t', // 0x00-0x0F
+    'Q',  'W',  'E',  'R',  'T',  'Y',  'U',  'I',  'O',  'P',  '{',  '}',  '\n', 0,    'A',  'S',  // 0x10-0x1F
+    'D',  'F',  'G',  'H',  'J',  'K',  'L',  ':',  '"',  '~',  0,    '|',  'Z',  'X',  'C',  'V',  // 0x20-0x2F
+    'B',  'N',  'M',  '<',  '>',  '?',  0,    '*',  0,    ' ',  0,    0,    0,    0,    0,    0,    // 0x30-0x3F
+    0,    0,    0,    0,    0,    0,    0,    '7',  '8',  '9',  '-',  '4',  '5',  '6',  '+',  '1',  // 0x40-0x4F
+    '2',  '3',  '0',  '.',  0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    // 0x50-0x5F
+    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    // 0x60-0x6F
+    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0     // 0x70-0x7F
+};
+
+static keyboard_state_t kb_state;
+
+bool keyboard_init(void) {
+    GFX_LOG_MIN("Initializing keyboard subsystem...\n");
+    
+    // Clear keyboard state
+    memset(&kb_state, 0, sizeof(keyboard_state_t));
+    
+    // Initialize buffer pointers
+    kb_state.buffer_head = 0;
+    kb_state.buffer_tail = 0;
+    kb_state.buffer_count = 0;
+    kb_state.command_ready = false;
+
+    // Clear all modifier states
+    memset(&kb_state.modifiers, 0, sizeof(key_modifiers_t));
+
+    return true;
+}
+
+void keyboard_handler(regs_t* regs) {
+    (void)regs;
+    uint8_t scancode = inb(KEYBOARD_DATA_PORT);
+    keyboard_process_scancode(scancode);
+}
+
+void keyboard_process_scancode(uint8_t scancode) {
+    SERIAL_LOG_HEX("Keyboard scancode: 0x", scancode);
+
+    if (scancode & KEY_RELEASE) {
+        // Key release
+        keyboard_handle_key_release(scancode & ~KEY_RELEASE);
+    } else {
+        // Key press
+        keyboard_handle_key_press(scancode);
+    }
+}
+
+void keyboard_handle_key_press(uint8_t scancode) {
+    // Handle modifier keys and special keys
+    switch (scancode) {
+        case KEY_CTRL:
+            kb_state.modifiers.ctrl_left = true;
+            SERIAL_LOG("Ctrl pressed\n");
+            return;
+            
+        case KEY_LSHIFT:
+            kb_state.modifiers.shift_left = true;
+            SERIAL_LOG("Left Shift pressed\n");
+            return;
+            
+        case KEY_RSHIFT:
+            kb_state.modifiers.shift_right = true;
+            SERIAL_LOG("Right Shift pressed\n");
+            return;
+           
+        case KEY_ALT:
+            kb_state.modifiers.alt_left = true;
+            SERIAL_LOG("Alt pressed\n");
+            return;
+            
+        case KEY_CAPS:
+            kb_state.modifiers.caps_lock = !kb_state.modifiers.caps_lock;
+            SERIAL_LOG("Caps Lock toggled\n");
+            return;
+
+        case KEY_BACKSPACE:
+            if (kb_state.buffer_count > 0) {
+                kb_state.buffer_count--;
+                kb_state.input_buffer[kb_state.buffer_count] = '\0';
+                // Simple backspace: move cursor back, print space, move back again
+                gfx_print("\b \b");
+            }
+            return;
+            
+        case KEY_ENTER:
+            // Null-terminate the current input
+            kb_state.input_buffer[kb_state.buffer_count] = '\0';
+            
+            // Print newline
+            gfx_print("\n");
+            
+            // Process the command if there's input
+            if (kb_state.buffer_count > 0) {
+                execute_command(kb_state.input_buffer);
+            }
+            
+            // Clear input buffer for next command
+            keyboard_clear_buffer();
+            
+            // Show prompt for next command
+            show_prompt("/");
+            
+            SERIAL_LOG("Enter pressed, command processed\n");
+            return;
+            
+        case KEY_PGUP:
+        case KEY_PGDN:
+        case KEY_UP:
+        case KEY_DOWN:
+            // Ignore these keys for now
+            return;
+            
+        default:
+            // Handle regular character input
+            if (is_printable_key(scancode)) {
+                char ascii = scancode_to_ascii(scancode,
+                    kb_state.modifiers.shift_left || kb_state.modifiers.shift_right,
+                    kb_state.modifiers.caps_lock);
+                    
+                if (ascii != 0 && kb_state.buffer_count < KEYBOARD_BUFFER_SIZE - 1) {
+                    kb_state.input_buffer[kb_state.buffer_count] = ascii;
+                    kb_state.buffer_count++;
+                    gfx_putchar(ascii); // Echo character to screen
+                }
+            }
+            break;
+    }
+    
+    // Handle special key combinations
+    if (keyboard_ctrl_pressed()) {
+        keyboard_handle_ctrl_combo(scancode);
+    }
+}
+
+void keyboard_handle_key_release(uint8_t scancode) {
+    switch (scancode) {
+        case KEY_CTRL:
+            kb_state.modifiers.ctrl_left = false;
+            break;
+            
+        case KEY_LSHIFT:
+            kb_state.modifiers.shift_left = false;
+            break;
+            
+        case KEY_RSHIFT:
+            kb_state.modifiers.shift_right = false;
+            break;
+            
+        case KEY_ALT:
+            kb_state.modifiers.alt_left = false;
+            break;
+    }
+}
+
+void keyboard_handle_ctrl_combo(uint8_t scancode) {
+    switch (scancode) {
+        case 0x2E: // Ctrl+C
+            keyboard_clear_buffer();
+            gfx_print("^C\n");
+            show_prompt("/");
+            break;
+            
+        case 0x26: // Ctrl+L
+            gfx_clear_screen();
+            show_prompt("/");
+            break;
+            
+        case 0x20: // Ctrl+D
+            // EOF signal - ignore for now
+            break;
+            
+        default:
+            break;
+    }
+}
+
+char scancode_to_ascii(uint8_t scancode, bool shift, bool caps) {
+    if (scancode >= 128) {
+        return 0; // Invalid scancode
+    }
+    
+    bool use_upper = shift;
+    
+    // Handle caps lock for letters only
+    if (caps && scancode >= 0x10 && scancode <= 0x32) {
+        // Letter keys (Q-P, A-L, Z-M ranges)
+        if ((scancode >= 0x10 && scancode <= 0x19) || // Q-P
+            (scancode >= 0x1E && scancode <= 0x26) || // A-L  
+            (scancode >= 0x2C && scancode <= 0x32)) { // Z-M
+            use_upper = !use_upper;
+        }
+    }
+    
+    return use_upper ? scancode_to_ascii_upper[scancode] : scancode_to_ascii_lower[scancode];
+}
+
+void keyboard_add_to_buffer(char c) {
+    if (kb_state.buffer_count < KEYBOARD_BUFFER_SIZE - 1) {
+        kb_state.input_buffer[kb_state.buffer_tail] = c;
+        kb_state.buffer_tail = (kb_state.buffer_tail + 1) % KEYBOARD_BUFFER_SIZE;
+        kb_state.buffer_count++;
+        
+        if (c == '\n') {
+            kb_state.command_ready = true;
+        }
+    }
+}
+
+char keyboard_get_char(void) {
+    if (kb_state.buffer_count == 0) {
+        return 0; // No characters available
+    }
+    
+    char c = kb_state.input_buffer[kb_state.buffer_head];
+    kb_state.buffer_head = (kb_state.buffer_head + 1) % KEYBOARD_BUFFER_SIZE;
+    kb_state.buffer_count--;
+    
+    return c;
+}
+
+bool keyboard_has_input(void) {
+    return kb_state.buffer_count > 0;
+}
+
+void keyboard_clear_buffer(void) {
+    kb_state.buffer_head = 0;
+    kb_state.buffer_tail = 0;
+    kb_state.buffer_count = 0;
+    kb_state.command_ready = false;
+    memset(kb_state.input_buffer, 0, KEYBOARD_BUFFER_SIZE);
+}
+
+bool keyboard_ctrl_pressed(void) {
+    return kb_state.modifiers.ctrl_left || kb_state.modifiers.ctrl_right;
+}
+
+bool keyboard_shift_pressed(void) {
+    return kb_state.modifiers.shift_left || kb_state.modifiers.shift_right;
+}
+
+bool keyboard_alt_pressed(void) {
+    return kb_state.modifiers.alt_left || kb_state.modifiers.alt_right;
+}
+
+bool is_printable_key(uint8_t scancode) {
+    return scancode_to_ascii_lower[scancode] != 0;
+}
+
+bool is_modifier_key(uint8_t scancode) {
+    switch (scancode) {
+        case KEY_CTRL:
+        case KEY_LSHIFT:
+        case KEY_RSHIFT:
+        case KEY_ALT:
+        case KEY_CAPS:
+            return true;
+        default:
+            return false;
+    }
+}
+
+const char* keyboard_get_input_buffer(void) {
+    return kb_state.input_buffer;
+}
+
+void keyboard_reset_input(void) {
+    keyboard_clear_buffer();
+}
+
+void keyboard_set_debug(bool enable) {
+    (void)enable;
+}

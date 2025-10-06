@@ -1,0 +1,17 @@
+set timeout=10
+set default=1
+
+menuentry "QuantumOS (Silent Mode)" {
+  multiboot /boot/quantum_os.elf verbosity=silent
+  boot
+}
+
+menuentry "QuantumOS (Normal Mode)" {
+  multiboot /boot/quantum_os.elf verbosity=minimal
+  boot
+}
+
+menuentry "QuantumOS (Verbose Mode)" {
+  multiboot /boot/quantum_os.elf verbosity=verbose
+  boot
+}

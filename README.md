@@ -84,3 +84,75 @@ To be determined - considering open source options
 
 ---
 *Building the future of operating systems*# Quantum-OS
+
+A modern operating system with quantum computing, AI, and parallel processing capabilities.
+
+## Features
+
+### Core System
+- **Framebuffer Graphics**: Full linear framebuffer support with proper text rendering
+- **Advanced Keyboard Input**: Complete keyboard driver with modifier keys, special keys, and key combinations
+- **Memory Management**: Virtual memory management with framebuffer mapping
+- **Interrupt Handling**: Professional interrupt system with proper PIC acknowledgment
+- **Debug System**: Centralized debugging with configurable verbosity levels
+
+### Advanced Capabilities
+- **Quantum Kernel**: Quantum process management with superposition and entanglement
+- **AI Subsystem**: Machine learning and optimization capabilities
+- **Parallel Processing**: Multi-core CPU support with NUMA awareness
+- **Security Manager**: Advanced security features and threat detection
+
+### Shell and Commands
+- **Interactive Shell**: Full command-line interface with command history
+- **Built-in Commands**: Help, clear, echo, version, and system utilities
+- **Ctrl Combinations**: Ctrl+C, Ctrl+L, and other standard key combinations
+
+## Building
+
+```bash
+make clean
+make
+```
+
+This will create `build/quantum_os.iso` which can be booted in QEMU or VirtualBox.
+
+## Running
+
+```bash
+qemu-system-i386 -cdrom build/quantum_os.iso
+```
+
+## System Requirements
+- i686-elf cross-compiler
+- NASM assembler
+- GRUB for ISO creation
+- xorriso for ISO building
+
+## Architecture
+
+The OS uses a microkernel architecture with modular subsystems:
+- Kernel core with GDT/IDT management
+- Graphics system with multiple backend support
+- Modular driver system
+- Advanced memory management
+- Quantum and AI processing extensions
+
+## Status
+
+✅ **Working Features:**
+- Framebuffer graphics with perfect text rendering
+- Complete keyboard input system
+- Memory management and virtual memory
+- Interrupt handling and PIC management
+- Shell with command processing
+- Debug and logging system
+
+🚧 **In Development:**
+- File system support
+- Network stack
+- Advanced quantum operations
+- AI optimization algorithms
+
+## License
+
+[Add your license here]

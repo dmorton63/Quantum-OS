@@ -1,0 +1,29 @@
+BOOTEAX:2BAD003A EBX:00010000
+MB_MAGIC: 2BADB002 EXP: 2BADB002
+MB_INFO: OK
+MB_FB: Flag present, parsing...
+MB_FB: Raw 64-bit addr: 00000000000B8000
+MB_FB: Resolution: 00000050x00000019x00000010
+MB_FB: Pitch: 000000A0
+MB_FB: Using addr: 000B8000
+MB_FB: Updating display with addr: FD000000
+MB_FB: Display updated!
+MB_FB: Attempting framebuffer mapping...
+MB_FB: Framebuffer mapping successful
+GFX_INIT: Starting
+GFX_INIT: Saved FB addr: FD000000
+GFX_INIT: Restored FB info
+GFX_INIT: FB detected!
+GFX_FORCE: Function called
+GFX_FORCE: Got display info
+GFX_FORCE: About to test FB access
+GFX_FORCE: Switching to framebuffer mode
+GFX_FORCE: Testing framebuffer memory access
+GFX_FORCE: FB pointer: FD000000
+GFX_FORCE: Read original pixel OK
+GFX_FORCE: Wrote test pixel
+GFX_FORCE: Framebuffer write test successful!
+GFX_FORCE: Restored original pixel
+GFX_FORCE: Drawing test pattern
+GFX_FORCE: Test pattern drawn
+GFX_FORCE: Framebuffer mode activated successfully!

@@ -1,0 +1,34 @@
+# Build directories and artifacts
+build/
+*.o
+*.elf
+*.bin
+*.iso
+
+# Backup files
+*.bak
+*.backup
+*.old
+Backup/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Test files
+test_*
+simple_boot_stub.asm
+test_c.c
+test_c.asm
+test_fb_16bit.c
+
+# Temporary files
+*.tmp
+*.temp
