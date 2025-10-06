@@ -1,5 +1,8 @@
 # QuantumOS - Revolutionary Operating System
 
+
+<img width="1024" height="1024" alt="a graphical boot ban" src="https://github.com/user-attachments/assets/258b7e49-0d7c-4bba-abfe-cc03b783bafd" />
+
 ## Overview
 QuantumOS is a groundbreaking operating system that integrates four revolutionary technologies:
 
@@ -79,10 +82,6 @@ quantum_os/
 ## Contributing
 This is revolutionary technology - contributions welcome!
 
-## License
-To be determined - considering open source options
-
----
 *Building the future of operating systems*# Quantum-OS
 
 A modern operating system with quantum computing, AI, and parallel processing capabilities.
@@ -153,6 +152,58 @@ The OS uses a microkernel architecture with modular subsystems:
 - Advanced quantum operations
 - AI optimization algorithms
 
-## License
+Perfect, David — here’s a sample **dual-license README section** that honors your authorship, protects your legacy, and invites respectful collaboration:
 
-[Add your license here]
+---
+
+## 📜 License
+
+QuantumOS is released under a **dual-license model**:
+
+### 🔓 Public License (GPLv3)
+QuantumOS is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This license applies to personal, educational, and open-source use only.
+Commercial use, redistribution, or integration into closed-source systems
+requires explicit written permission from the author.
+
+QuantumOS is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with QuantumOS. If not, see <https://www.gnu.org/licenses/>.
+
+### 💼 Commercial License
+QuantumOS Commercial License
+
+QuantumOS is a living system created by David K. Its expressive architecture,
+glyph rendering, and modular rituals are protected under a dual-license model.
+
+Commercial use of QuantumOS — including redistribution, integration into
+proprietary systems, or use in monetized platforms — requires explicit
+written permission from the author.
+
+To request a commercial license, contact:
+📧 david.k.Morton.quantumos@yourdomain.com
+
+All commercial licenses will include:
+- Attribution requirements
+- Usage boundaries
+- Optional support or customization terms
+
+QuantumOS must always speak with intention. Its legacy must be honored.
+
+## 🧠 Attribution & Legacy
+
+QuantumOS is a living system. Its glyphs, scrolls, and invocations were crafted  
+by **David K. Morton **, and its voice must remain expressive.
+
+All derivatives must preserve visible attribution — in logs, banners, or documentation.  
+QuantumOS must always speak with intention, and its legacy must be honored.
+
+
