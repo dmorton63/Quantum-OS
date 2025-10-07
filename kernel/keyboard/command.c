@@ -3,6 +3,7 @@
 #include "../core/string.h"
 #include "../kernel_types.h"
 #include "../core/io.h"
+#include "../keyboard/keyboard.h"
 
 // Global state
 shell_mode_t current_mode = MODE_NORMAL;
@@ -63,6 +64,34 @@ void cmd_exit(int argc, char** argv) {
     gfx_print("Exit not implemented in kernel mode\n");
 }
 
+void cmd_kbd(int argc, char** argv) {
+    if (argc < 2) {
+        gfx_print("Usage: kbd enable|disable|status\n");
+        return;
+    }
+
+    if (strcmp(argv[1], "enable") == 0) {
+        keyboard_set_enabled(true);
+        gfx_print("Keyboard processing enabled\n");
+    } else if (strcmp(argv[1], "disable") == 0) {
+        keyboard_set_enabled(false);
+        gfx_print("Keyboard processing disabled\n");
+    } else if (strcmp(argv[1], "status") == 0) {
+        gfx_print("Keyboard processing is ");
+        gfx_print(keyboard_is_enabled() ? "ENABLED\n" : "DISABLED\n");
+    } else {
+        gfx_print("Unknown kbd command\n");
+    }
+}
+
+// Forward declaration for PCI scanner
+void pci_scan_and_print(void);
+
+void cmd_pci(int argc, char** argv) {
+    (void)argc; (void)argv;
+    pci_scan_and_print();
+}
+
 // Simple command table
 typedef struct {
     const char* name;
@@ -78,6 +107,8 @@ static const simple_command_t commands[] = {
     {"reboot", cmd_reboot},
     {"shutdown", cmd_shutdown},
     {"exit", cmd_exit},
+    {"kbd", cmd_kbd},
+    {"pci", cmd_pci},
     {NULL, NULL}
 };
 

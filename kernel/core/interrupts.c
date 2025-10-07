@@ -12,6 +12,8 @@
 #include "kernel.h"
 #include "kernel_types.h"
 #include "../keyboard/keyboard_types.h"
+#include "../core/clock_overlay.h"
+#include "../core/timer.h"
 
 // ────────────────
 // External Symbols
@@ -121,13 +123,12 @@ void init_idt() {
 void timer_handler(struct regs* r) {
     static uint32_t tick_count = 0;
     tick_count++;
-
-    if (tick_count <= 10) {
-        gfx_print("Tick #");
-        gfx_print_decimal(tick_count);
-        gfx_print("\n");
-        gfx_print_hex(r->ebx);
-    }
+    clock_tick();
+    inc_ticks();
+    // Periodically flush any IRQ-queued debug lines to serial so they
+    // become visible in headless captures.
+    extern void irq_log_flush_to_serial(void);
+    irq_log_flush_to_serial();
     send_eoi(32); // assuming regs contains int_no
 }
 
@@ -142,7 +143,7 @@ void send_eoi(uint8_t int_no) {
 // ────────────────
 // PIC Initialization
 // ────────────────
-extern void init_pic();
+//extern void init_pic();
 
 // static void pic_init(void) {
 //     uint8_t mask1 = inb(0x21);
@@ -170,6 +171,8 @@ extern void init_pic();
 // ────────────────
 void keyboard_service_handler(regs_t* regs) {
     uint8_t scancode = inb(0x60);
+    SERIAL_LOG("keyboard_service_handler invoked\n");
+    SERIAL_LOG_HEX("scancode=0x", scancode);
     //uint8_t status = inb(0x64);
     // if (status & 0x01) {
     //     gfx_print("Keyboard has data\n");
@@ -188,6 +191,13 @@ void interrupts_system_init(void) {
     gfx_print("IDT initialized.\n");
     gfx_print("Remapping PIC...\n");
     init_pic();       // PIC remapping
+    // Initialize PIT to 100Hz so sleep_ms and timer ticks advance
+    init_timer(100);
+    // Log PIC masks to help debug IRQ masking
+    uint8_t mask1 = inb(0x21);
+    uint8_t mask2 = inb(0xA1);
+    SERIAL_LOG_HEX("PIC1 mask=0x", mask1);
+    SERIAL_LOG_HEX("PIC2 mask=0x", mask2);
     register_interrupt_handler(0, divide_by_zero_handler);
     register_interrupt_handler(32, timer_handler);
     register_interrupt_handler(33, keyboard_service_handler);

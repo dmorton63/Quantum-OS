@@ -9,9 +9,22 @@
 
 #include "../kernel_types.h"
 
+typedef struct Block {
+    size_t size;
+    struct Block* next;
+    int free;
+} Block;
+
+#define BLOCK_SIZE sizeof(Block)
+
+Block* freeList = NULL;
+
 // Page size and alignment
 #define PAGE_SIZE 0x1000  // 4KB pages
 #define ALIGNED(x) __attribute__((aligned(x)))
+void* malloc(size_t size);
+void *sbrk(int increment);
+void free(void *ptr);
 
 // Physical Memory Manager (PMM)
 void pmm_init(void);

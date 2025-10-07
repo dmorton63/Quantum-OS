@@ -6,9 +6,10 @@
  */
 
 #include "quantum_kernel.h"
-#include "../core/kernel.h"
+//#include "../core/kernel.h"
 #include "../graphics/graphics.h"
 #include "../config.h"
+#include "../core/clock_overlay.h"
 
 // Global quantum system state
 static quantum_process_t* g_quantum_processes = NULL;
@@ -34,7 +35,8 @@ void quantum_kernel_main(uint32_t magic, multiboot_info_t* mbi) {
 
     // Optionally spawn initial quantum process
     quantum_process_create("init", 0);
-
+    clock_overlay_init();          // Initialize clock overlay
+    reset_clock();               // Reset clock to 00:00:00
     // Enter main loop
     while (true) {
         quantum_scheduler_tick();

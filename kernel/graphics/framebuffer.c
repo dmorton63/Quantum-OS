@@ -16,6 +16,8 @@ void framebuffer_scroll(void);
 void framebuffer_draw_char(uint32_t x, uint32_t y, char c, rgb_color_t fg, rgb_color_t bg);
 
 static uint32_t* framebuffer_ptr = NULL;
+// Expose a raw pointer used by fb_* helpers
+uint32_t* fb_ptr = NULL;
 static uint32_t fb_width = 0;
 static uint32_t fb_height = 0;
 static uint32_t fb_pitch = 0;
@@ -38,7 +40,9 @@ void framebuffer_init(void) {
     // Get framebuffer info from multiboot (stored during init)
     // The graphics system should have preserved the real framebuffer info
     if (info->framebuffer != NULL) {
-        framebuffer_ptr = info->framebuffer;
+    framebuffer_ptr = info->framebuffer;
+    // Also set fb_ptr used by fb_* helpers
+    fb_ptr = (uint32_t*)framebuffer_ptr;
         
         // Store the PIXEL dimensions from multiboot detection
         // Note: At this point info->width/height are still in PIXELS from multiboot
@@ -302,6 +306,13 @@ void framebuffer_draw_char(uint32_t x, uint32_t y, char c, rgb_color_t fg, rgb_c
     }
 }
 
+void fb_draw_text(uint32_t x, uint32_t y, const char *text, rgb_color_t color) {
+    while (*text) {
+        framebuffer_draw_char(x, y, *text, color, (rgb_color_t){0, 0, 0, 0});
+        x += 8;  // Advance by character width
+        text++;
+    }
+}
 
 
 // VESA/GOP detection and initialization (placeholder)
@@ -355,4 +366,54 @@ void framebuffer_test(void) {
     framebuffer_draw_pixel(0, 1, green);
     framebuffer_draw_pixel(1, 1, blue);
     framebuffer_draw_pixel(2, 1, red);
+}
+
+// Simple rectangle drawing functions for popup support
+
+extern uint32_t* fb_ptr;
+// extern int fb_width;
+// extern int fb_height;
+// extern int fb_pitch;
+
+void fb_draw_rect(int x, int y, int width, int height, uint32_t color) {
+    for (int j = 0; j < height; ++j) {
+        for (int i = 0; i < width; ++i) {
+            int px = x + i;
+            int py = y + j;
+            if (px >= 0 && px < fb_width && py >= 0 && py < fb_height) {
+                uint32_t offset = (py * fb_pitch + px * (fb_bpp / 8)) / 4;
+                fb_ptr[offset] = color;
+            }
+        }
+    }
+}
+
+void fb_draw_rect_outline(int x, int y, int width, int height, uint32_t color) {
+    // Top and bottom
+    for (int i = 0; i < width; ++i) {
+        if (x + i >= 0 && x + i < fb_width) {
+            if (y >= 0 && y < fb_height)
+                fb_ptr[(y * fb_pitch + (x + i) * (fb_bpp / 8)) / 4] = color;
+            if (y + height - 1 >= 0 && y + height - 1 < fb_height)
+                fb_ptr[((y + height - 1) * fb_pitch + (x + i) * (fb_bpp / 8)) / 4] = color;
+        }
+    }
+
+    // Left and right
+    for (int j = 0; j < height; ++j) {
+        if (y + j >= 0 && y + j < fb_height) {
+            if (x >= 0 && x < fb_width)
+                fb_ptr[((y + j) * fb_pitch + x * (fb_bpp / 8)) / 4] = color;
+            if (x + width - 1 >= 0 && x + width - 1 < fb_width)
+                fb_ptr[((y + j) * fb_pitch + (x + width - 1) * (fb_bpp / 8)) / 4] = color;
+        }
+    }
+}
+
+uint32_t fb_get_pixel(int x, int y) {
+    if (x >= 0 && x < fb_width && y >= 0 && y < fb_height) {
+        uint32_t offset = (y * fb_pitch + x * (fb_bpp / 8)) / 4;
+        return fb_ptr[offset];
+    }
+    return 0; // Default or error color
 }

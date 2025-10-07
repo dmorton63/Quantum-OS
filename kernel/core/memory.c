@@ -8,6 +8,7 @@
 #include "memory.h"
 #include "../config.h"
 
+
 // Forward declarations for serial debug functions
 extern void serial_debug(const char* msg);
 extern void serial_debug_hex(uint32_t value);
@@ -21,6 +22,11 @@ extern void serial_debug_hex(uint32_t value);
 // Physical Memory Manager
 #define PMM_MAX_PAGES   32768   // Support up to 128MB (32768 * 4KB)
 #define PMM_BITMAP_SIZE (PMM_MAX_PAGES / 8)  // Bitmap for page allocation
+
+#define HEAP_SIZE (1024 * 1024)  // 1MB
+static char heap[HEAP_SIZE];
+static char* heap_end = heap;
+
 
 static uint8_t pmm_bitmap[PMM_BITMAP_SIZE];
 static uint32_t pmm_total_pages = 0;
@@ -301,7 +307,41 @@ static inline bool pmm_is_page_set(uint32_t page_num) {
     return true; // Assume used if out of bounds
 }
 
-void pmm_init(void) {
+void *malloc(size_t size)
+{
+    Block* curr = freeList;
+    while (curr) {
+        if (curr->free && curr->size >= size) {
+            curr->free = 0;
+            return (void*)(curr + 1);
+        }
+        curr = curr->next;
+    }
+
+    Block* newBlock = sbrk(size + BLOCK_SIZE);
+    if (newBlock == (void*)-1) return NULL;
+
+    newBlock->size = size;
+    newBlock->next = freeList;
+    newBlock->free = 0;
+    freeList = newBlock;
+
+    return (void*)(newBlock + 1);
+
+}
+
+
+
+void free(void *ptr)
+{
+    if (!ptr) return;
+    Block* block = (Block*)ptr - 1;
+    block->free = 1;
+
+}
+
+void pmm_init(void)
+{
     // Don't print during boot - can cause serial issues
     // gfx_print("Initializing Physical Memory Manager...\n");
     
@@ -392,6 +432,7 @@ void pmm_print_stats(void) {
     gfx_print(" (");
     gfx_print_decimal((pmm_used_pages * PAGE_SIZE) / 1024);
     gfx_print(" KB)\n");
+    
     gfx_print("Free pages: ");
     gfx_print_decimal(pmm_free_pages);
     gfx_print(" (");
@@ -402,71 +443,6 @@ void pmm_print_stats(void) {
 void heap_init(void) {
     gfx_print("Kernel heap initialized.\n");
 }
-
-// memset moved to string.c
-/*
-void* memset(void* ptr, int value, size_t size) {
-    uint8_t* p = (uint8_t*)ptr;
-    uint8_t val = (uint8_t)value;
-    
-    for (size_t i = 0; i < size; i++) {
-        p[i] = val;
-    }
-    
-    return ptr;
-}
-*/
-
-// memcpy moved to string.c
-/*
-void* memcpy(void* dest, const void* src, size_t size) {
-    uint8_t* d = (uint8_t*)dest;
-    const uint8_t* s = (const uint8_t*)src;
-    
-    for (size_t i = 0; i < size; i++) {
-        d[i] = s[i];
-    }
-    
-    return dest;
-}
-*/
-
-// strlen moved to string.c
-/*
-size_t strlen(const char* str) {
-    size_t len = 0;
-    while (str[len]) {
-        len++;
-    }
-    return len;
-}
-*/
-
-// strcpy moved to string.c
-/*
-char* strcpy(char* dest, const char* src) {
-    char* original_dest = dest;
-    
-    while (*src) {
-        *dest++ = *src++;
-    }
-    *dest = '\0';
-    
-    return original_dest;
-}
-*/
-
-// strcmp moved to string.c
-/*
-int strcmp(const char* str1, const char* str2) {
-    while (*str1 && (*str1 == *str2)) {
-        str1++;
-        str2++;
-    }
-    
-    return *(const uint8_t*)str1 - *(const uint8_t*)str2;
-}
-*/
 
 // Simple heap allocator (placeholder implementation)
 void* heap_alloc(size_t size) {
@@ -542,4 +518,11 @@ void kernel_delay(uint32_t count) {
     for (volatile uint32_t i = 0; i < count; i++) {
         // Busy wait
     }
+}
+
+void* sbrk(int increment) {
+    if (heap_end + increment > heap + HEAP_SIZE) return (void*)-1;
+    void* prev = heap_end;
+    heap_end += increment;
+    return prev;
 }

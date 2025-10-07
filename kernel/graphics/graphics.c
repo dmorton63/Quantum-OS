@@ -12,6 +12,9 @@
 // External debug functions
 extern void serial_debug(const char* msg);
 extern void serial_debug_hex(uint32_t value);
+// Message box routing (forward-declared in config.h but make explicit here)
+extern void message_box_logf(const char* fmt, ...);
+extern void message_box_log(const char* msg);
 
 // Function declarations for font rendering (implemented in fonts.c)
 extern void draw_bitmap_char(uint32_t fb_x, uint32_t fb_y, char c, rgb_color_t fg_color, rgb_color_t bg_color, font_descriptor_t* font);
@@ -63,7 +66,10 @@ void graphics_init(multiboot_info_t* mb_info) {
     SERIAL_LOG_MIN("GFX_INIT: Starting graphics initialization");
     
     if(mb_info && (mb_info->flags && (1 << 12))) {
-        g_display.framebuffer = (uint32_t*)mb_info->framebuffer_info.framebuffer_addr;
+        /* framebuffer_addr is 64-bit in multiboot structures; cast via
+           uintptr_t to avoid pointer-size mismatch warnings on 32-bit
+           vs 64-bit builds. */
+        g_display.framebuffer = (uint32_t*)(uintptr_t)mb_info->framebuffer_info.framebuffer_addr;
         g_display.width = mb_info->framebuffer_info.framebuffer_width;
         g_display.height = mb_info->framebuffer_info.framebuffer_height;
         g_display.pitch = mb_info->framebuffer_info.framebuffer_pitch;
@@ -158,8 +164,17 @@ void gfx_putchar(char c) {
 
 void gfx_print(const char* str) {
     if (!str) return;
-    while (*str) {
-        gfx_putchar(*str++);
+    // Always route prints into the message box (so they are visible
+    // in the UI). Avoid drawing into the desktop framebuffer/VGA to
+    // prevent debug output from overwriting UI; if the system is in
+    // serial-only mode, emit characters to the serial backend instead.
+    extern void message_box_log(const char* msg);
+    message_box_log(str);
+
+    if (g_display.mode == DISPLAY_MODE_SERIAL_CONSOLE) {
+        while (*str) {
+            gfx_putchar(*str++);
+        }
     }
 }
 
@@ -240,10 +255,10 @@ void gfx_scroll_up(void) {
 
 // Display information accessors
 display_info_t* graphics_get_info(void) {
-    // SERIAL_LOG("graphics_get_info -> GFX_INFO: Current mode requested");
-    // SERIAL_LOG_DEC("graphics_get_info -> GFX_INFO: Mode value: ", g_display.mode);
-    // SERIAL_LOG_DEC("graphics_get_info -> GFX Framebuffer Address:", (uint32_t)g_display.framebuffer);
-    // return &g_display;  
+    SERIAL_LOG("graphics_get_info -> GFX_INFO: Current mode requested");
+    SERIAL_LOG_DEC("graphics_get_info -> GFX_INFO: Mode value: ", g_display.mode);
+    SERIAL_LOG_DEC("graphics_get_info -> GFX Framebuffer Address:", (uint32_t)(uintptr_t)g_display.framebuffer);
+    return &g_display;
 }
 
 display_mode_t graphics_get_mode(void) {

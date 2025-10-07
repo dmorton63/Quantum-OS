@@ -11,14 +11,19 @@ typedef enum {
 
 extern verbosity_level_t g_verbosity;
 
+// Forward declare message box routing helpers so macros can call them
+// without including graphics headers here.
+void message_box_log(const char* msg);
+void message_box_logf(const char* fmt, ...);
+
 
 #ifdef DEBUG_SERIAL
     #define SERIAL_LOG(msg) do { \
-        if (g_verbosity >= VERBOSITY_VERBOSE) serial_debug(msg); \
+        if (g_verbosity >= VERBOSITY_VERBOSE) { serial_debug(msg); message_box_log(msg); } \
     } while (0)
 
     #define SERIAL_LOG_MIN(msg) do { \
-        if (g_verbosity >= VERBOSITY_MINIMAL) serial_debug(msg); \
+        if (g_verbosity >= VERBOSITY_MINIMAL) { serial_debug(msg); message_box_log(msg); } \
     } while (0)
 
     #define SERIAL_LOG_HEX(prefix, val) do { \
@@ -26,6 +31,7 @@ extern verbosity_level_t g_verbosity;
             serial_debug(prefix); \
             serial_debug_hex(val); \
             serial_debug("\n"); \
+            message_box_logf("%s0x%x\n", prefix, val); \
         } \
     } while (0)
 
@@ -34,6 +40,7 @@ extern verbosity_level_t g_verbosity;
             serial_debug(prefix); \
             serial_debug_decimal(val); \
             serial_debug("\n"); \
+            message_box_logf("%s%u\n", prefix, val); \
         } \
     } while (0)
 #else
@@ -44,7 +51,11 @@ extern verbosity_level_t g_verbosity;
 #endif
 
 #ifdef DEBUG_BOOTLOG
-    #define BOOT_LOG(msg) boot_log_push(msg)
+    // BOOT_LOG buffers messages for later flushing. Do not directly call
+    // message_box_log here because the boot log flush will call gfx_print()
+    // which already routes into the message box. Calling both produced
+    // duplicate entries in the message box.
+    #define BOOT_LOG(msg) do { boot_log_push(msg); } while (0)
     #define BOOT_LOG_HEX(prefix, val) boot_log_push_hex(prefix, val)
     #define BOOT_LOG_DEC(prefix, val) boot_log_push_decimal(prefix, val)
 #else
@@ -58,12 +69,14 @@ extern verbosity_level_t g_verbosity;
 
 
 #ifdef DEBUG_GRAPHICS
+    // gfx_print already routes into the message box; avoid calling
+    // message_box_log twice which caused duplicated messages.
     #define GFX_LOG(msg) do { \
-        if (g_verbosity >= VERBOSITY_VERBOSE) gfx_print(msg); \
+        if (g_verbosity >= VERBOSITY_VERBOSE) { gfx_print(msg); } \
     } while (0)
 
     #define GFX_LOG_MIN(msg) do { \
-        if (g_verbosity >= VERBOSITY_MINIMAL) gfx_print(msg); \
+        if (g_verbosity >= VERBOSITY_MINIMAL) { gfx_print(msg); } \
     } while (0)
 
     #define GFX_LOG_HEX(prefix, val) do { \

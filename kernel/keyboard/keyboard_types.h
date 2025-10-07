@@ -1,3 +1,6 @@
+#ifndef KEYBOARD_TYPES_H
+#define KEYBOARD_TYPES_H
+
 #include "../../kernel/kernel_types.h" 
 
 // Keyboard hardware constants
@@ -65,6 +68,7 @@
 // Buffer sizes
 #define KEYBOARD_BUFFER_SIZE 512
 #define MAX_INPUT_LENGTH     255
+
 typedef struct {
     bool ctrl_left;
     bool ctrl_right;
@@ -87,4 +91,7 @@ typedef struct keyboard_state{
     key_modifiers_t modifiers;
 } keyboard_state_t;
 
+extern keyboard_state_t kb_state;
 void keyboard_handler(regs_t* regs, uint8_t scancode);
+
+#endif // KEYBOARD_TYPES_H

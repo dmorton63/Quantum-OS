@@ -22,6 +22,9 @@ idt_entry_t idt[IDT_ENTRIES];
 typedef void (*isr_t)(regs_t*);
 
 void register_interrupt_handler(uint8_t int_no, isr_t handler);
+
+// Initialize and remap the legacy PICs. Implemented in assembly (pic.asm).
+void init_pic(void);
 void divide_by_zero_handler();
 void timer_handler(struct regs* r);
 void send_eoi(uint8_t int_no);

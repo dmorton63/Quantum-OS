@@ -20,9 +20,10 @@ void shell_init(void) {
 }
 
 void show_prompt(const char* path) {
-    gfx_print("QuantumOS:");
-    gfx_print(path);
-    gfx_print("$ ");
+
+    char prompt[256];
+        snprintf(prompt, sizeof(prompt), "QuantumOS:%s$ ", path);
+        gfx_print(prompt);
 }
 
 void process_command(const char* command) {

@@ -1,8 +1,10 @@
 #include "keyboard.h"
+#include "keyboard_types.h"
 #include "../shell/shell.h"
 #include "command.h"
 #include "../graphics/graphics.h"
 #include "../core/io.h"
+#include "../graphics/irq_logger.h"
 
 // Global keyboard state
 static const char scancode_to_ascii_lower[128] = {
@@ -29,7 +31,75 @@ static const char scancode_to_ascii_upper[128] = {
 
 
 
-static keyboard_state_t kb_state;
+// Define global keyboard state (extern declared in keyboard_types.h)
+keyboard_state_t kb_state;
+
+// Whether keyboard processing is enabled. When false, IRQs still enqueue
+// scancodes into the raw scancode buffer but higher-level processing (echo,
+// command handling, etc.) is suppressed so modal UI will not consume keys.
+static bool keyboard_enabled = true;
+
+// Simple scancode ring buffer for UI consumers that need raw scancodes
+#define SCANCODE_BUF_SIZE 128
+static uint8_t scancode_buf[SCANCODE_BUF_SIZE];
+static uint16_t scancode_head = 0;
+static uint16_t scancode_tail = 0;
+static uint16_t scancode_count = 0;
+
+bool keyboard_has_scancode(void) {
+    return scancode_count > 0;
+}
+
+uint8_t keyboard_get_scancode(void) {
+    if (scancode_count == 0) return 0;
+    uint8_t v = scancode_buf[scancode_head];
+    scancode_head = (scancode_head + 1) % SCANCODE_BUF_SIZE;
+    scancode_count--;
+    return v;
+}
+
+// Peek next scancode without consuming it. Returns true if a scancode is
+// available and writes it to *out.
+bool keyboard_peek_scancode(uint8_t *out) {
+    if (!out) return false;
+    bool has = false;
+    // brief critical section to stabilize head/count
+    __asm__ volatile("cli");
+    if (scancode_count > 0) {
+        *out = scancode_buf[scancode_head];
+        has = true;
+    }
+    __asm__ volatile("sti");
+    return has;
+}
+
+// Peek scancode at offset (lookahead) without consuming. offset=0 is same
+// as keyboard_peek_scancode.
+bool keyboard_peek_scancode_at(size_t offset, uint8_t *out) {
+    if (!out) return false;
+    bool has = false;
+    __asm__ volatile("cli");
+    if (scancode_count > offset) {
+        size_t idx = (scancode_head + offset) % SCANCODE_BUF_SIZE;
+        *out = scancode_buf[idx];
+        has = true;
+    }
+    __asm__ volatile("sti");
+    return has;
+}
+
+// Peek next ASCII char from the input buffer without consuming it.
+bool keyboard_peek_char(char *out) {
+    if (!out) return false;
+    bool has = false;
+    __asm__ volatile("cli");
+    if (kb_state.buffer_count > 0) {
+        *out = kb_state.input_buffer[kb_state.buffer_head];
+        has = true;
+    }
+    __asm__ volatile("sti");
+    return has;
+}
 
 bool keyboard_init(void) {
     GFX_LOG_MIN("Initializing keyboard subsystem...\n");
@@ -92,7 +162,21 @@ void keyboard_send_eoi(uint32_t int_no) {
 
 
 void keyboard_process_scancode(uint8_t scancode) {
-    SERIAL_LOG_HEX("Keyboard scancode: 0x", scancode);
+    // Enqueue scancode into IRQ-safe logger instead of doing heavier
+    // logging directly from interrupt context.
+    //irq_log_enqueue_hex("Keyboard scancode: ", scancode);
+
+    // Push raw scancode into scancode buffer for consumers that poll it.
+    if (scancode_count < SCANCODE_BUF_SIZE - 1) {
+        scancode_buf[scancode_tail] = scancode;
+        scancode_tail = (scancode_tail + 1) % SCANCODE_BUF_SIZE;
+        scancode_count++;
+    }
+
+    // If keyboard processing is disabled, do not dispatch to the higher-
+    // level handlers. This allows modal UI (popups) to be bypassed or the
+    // shell to continue seeing raw input without interference.
+    if (!keyboard_enabled) return;
 
     if (scancode & KEY_RELEASE) {
         // Key release
@@ -101,6 +185,14 @@ void keyboard_process_scancode(uint8_t scancode) {
         // Key press
         keyboard_handle_key_press(scancode);
     }
+}
+
+void keyboard_set_enabled(bool enabled) {
+    keyboard_enabled = enabled;
+}
+
+bool keyboard_is_enabled(void) {
+    return keyboard_enabled;
 }
 
 void keyboard_handle_key_press(uint8_t scancode) {

@@ -12,6 +12,8 @@
 #include "../graphics/graphics.h"
 #include "../graphics/framebuffer.h"
 #include "kernel.h"
+#include "../graphics/popup.h"
+#include "../graphics/message_box.h"
 // Function declarations from other modules
 void gdt_init(void);
 void idt_init(void);  
@@ -98,6 +100,10 @@ int kernel_main(uint32_t magic, multiboot_info_t* mbi) {
     // Initialize basic graphics firstma
     graphics_init(mbi);
     framebuffer_init();
+     /* Initialize message box as soon as framebuffer is available so
+         any early debug messages are captured and displayed in the UI. */
+     message_box_init(80);
+     message_box_push("Framebuffer initialized.");
     // framebuffer_test();
     //     while (1) {
     //     // CPU halt to reduce CPU usage while waiting for input
@@ -120,13 +126,45 @@ int kernel_main(uint32_t magic, multiboot_info_t* mbi) {
     gfx_print("Initializing keyboard driver...\n");
     draw_splash("QuantumOS Keyboard Test");
     keyboard_init();
-    //shell_init();
+    // Ensure higher-level keyboard processing is enabled by default so
+    // the interactive shell and commands are available. Use the `kbd`
+    // command at runtime to toggle processing if needed.
+    keyboard_set_enabled(true);
+    // Enable interrupts now that keyboard and IDT are initialized so
+    // modal popups can use the interrupt-driven keyboard buffer.
+    __asm__ volatile("sti");
+    message_box_push("System initialized. Ready.");
     rgb_color_t deep_blue = { .red = 0x00, .green = 0x33, .blue = 0x66 };
     splash_clear(deep_blue);
     splash_box(400, 200, (rgb_color_t){ .red = 0xFF, .green = 0xFF, .blue = 0xFF, .alpha = 0xFF });
     splash_title("QuantumOS Keyboard Test", (rgb_color_t){ .red = 0x00, .green = 0x00, .blue = 0x00, .alpha = 0xFF }, (rgb_color_t){ .red = 0xFF, .green = 0xFF, .blue = 0xFF, .alpha = 0xFF });
+     /* Redraw the message box after splash is drawn since splash_clear()
+         overwrites the framebuffer. This ensures the bottom message area is
+         visible to the user. */
+     extern void message_box_render(void);
+     message_box_render();
     //shell_run();
+    
+    PopupParams params = {
+    .x = 100,
+    .y = 80,
+    .message = "Save changes?",
+    .title = "Confirm",
+    .title_color = { .red = 0xFF, .green = 0xFF, .blue = 0xFF, .alpha = 0xFF },
+    .title_height = 26,
+    .bg_color = (rgb_color_t){ .red = 0x22, .green = 0x22, .blue = 0x22, .alpha = 0xFF },
+    .border_color = (rgb_color_t){ .red = 0xFF, .green = 0xFF, .blue = 0xFF, .alpha = 0xFF },
+    .text_color = { .red = 0x00, .green = 0xFF, .blue = 0x00, .alpha = 0xFF },  // if using rgb_color_t
+    .timeout_ms = 0,
+    .dismiss_on_esc = true,
+    .confirm_on_enter = true,
+    .on_confirm = confirm_action,
+    .on_cancel = cancel_action
+};
 
+
+
+show_popup(&params);
     //gfx_print("QuantumOS kernel initialization complete!\n");
      //   __asm__ volatile("cli");
         __asm__ volatile("sti");
@@ -138,7 +176,7 @@ int kernel_main(uint32_t magic, multiboot_info_t* mbi) {
     //     __asm__ volatile("hlt");
     // }
 
-    return;
+    return 1;
 }
 
 /**
