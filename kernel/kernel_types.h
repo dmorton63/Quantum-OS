@@ -1,10 +1,3 @@
-/**
- * QuantumOS Kernel Types
- * 
- * Basic type definitions for freestanding kernel environment.
- * Replaces stdint.h and other standard library dependencies.
- */
-
 #ifndef KERNEL_TYPES_H
 #define KERNEL_TYPES_H
 

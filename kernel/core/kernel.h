@@ -8,7 +8,6 @@
 #define QUANTUM_OS_KERNEL_H
 
 #include "../kernel_types.h"
-
 // Forward declarations
 typedef struct multiboot_info multiboot_info_t;
 typedef struct quantum_process quantum_process_t;
@@ -23,6 +22,26 @@ typedef struct {
     uint32_t parallel_tasks;
     uint32_t ai_agents;
 } kernel_state_t;
+
+
+enum vga_color {
+    BLACK = 0,
+    BLUE = 1,
+    GREEN = 2,
+    CYAN = 3,
+    RED = 4,
+    MAGENTA = 5,
+    BROWN = 6,
+    LIGHT_GREY = 7,
+    DARK_GREY = 8,
+    LIGHT_BLUE = 9,
+    LIGHT_GREEN = 10,
+    LIGHT_CYAN = 11,
+    LIGHT_RED = 12,
+    LIGHT_MAGENTA = 13,
+    LIGHT_BROWN = 14,
+    WHITE = 15,
+};
 
 // External kernel state
 extern kernel_state_t g_kernel_state;
@@ -40,6 +59,8 @@ void create_init_process(void);
 void kernel_idle_loop(void);
 void kernel_panic(const char* message);
 
+void draw_splash(const char *title);
+
 // Memory management
 void vmm_init(void);
 void pmm_init(void);
@@ -56,6 +77,7 @@ bool vmm_map_framebuffer(uint32_t fb_physical_addr, uint32_t fb_size);
 
 // Interrupt system
 void interrupts_system_init(void);
+// void register_interrupt_handler(uint8_t int_no, isr_t handler);
 void quantum_interrupts_init(void);
 void idt_init(void);
 void gdt_init(void);

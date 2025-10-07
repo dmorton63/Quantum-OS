@@ -1,59 +1,203 @@
 /**
  * QuantumOS - Interrupt System
- * Handles IRQ routing and system initialization
+ * Handles IRQ routing, exception dispatch, and system initialization
  */
 
+#include "interrupts.h"
 #include "../core/kernel.h"
 #include "../graphics/graphics.h"
-#include "../keyboard/keyboard.h"
+//#include "../keyboard/keyboard_types.h"
 #include "../core/io.h"
-// Central interrupt handler invoked by irq_common_stub
-void interrupt_handler(uint32_t interrupt_number, uint32_t error_code) {
-    interrupt_number &= 0xFF;
+#include "../config.h"
+#include "kernel.h"
+#include "kernel_types.h"
+#include "../keyboard/keyboard_types.h"
 
-    switch (interrupt_number) {
-        case 33: { // IRQ1: Keyboard
-            regs_t regs = { .int_no = interrupt_number, .err_code = error_code };
-            keyboard_handler(&regs);
-            break;
-        }
+// ────────────────
+// External Symbols
+// ────────────────
+extern void idt_flush(uint32_t);
+extern void irq33();
+extern void isr0();
+extern void irq0_handler();
 
-        // Future IRQs can be added here
-        case 208: // Spurious interrupt - acknowledge and ignore
-            // Send EOI to both PICs
-            outb(0xA0, 0x20); // EOI to slave PIC
-            outb(0x20, 0x20); // EOI to master PIC
-            break;
-            
-        default:
-            gfx_print("Unhandled interrupt: ");
-            gfx_print_decimal(interrupt_number);
-            gfx_print(" (err=");
-            gfx_print_decimal(error_code);
-            gfx_print(")\n");
-            
-            // Send EOI for hardware interrupts (32-47)
-            if (interrupt_number >= 32 && interrupt_number < 48) {
-                if (interrupt_number >= 40) {
-                    outb(0xA0, 0x20); // EOI to slave PIC
-                }
-                outb(0x20, 0x20); // EOI to master PIC
-            }
-            break;
+// ────────────────
+// Interrupt Handler Table
+// ────────────────
+static isr_t interrupt_handlers[MAX_INTERRUPTS];
+
+void register_interrupt_handler(uint8_t int_no, isr_t handler) {
+    if (int_no < MAX_INTERRUPTS) {
+        interrupt_handlers[int_no] = handler;
     }
 }
 
-// Initializes GDT and IDT — must be called before enabling interrupts
+
+
+// ────────────────
+// Central Interrupt Dispatcher
+// ────────────────
+void interrupt_handler(uint32_t int_no, uint32_t err_code) {
+    int_no &= 0xFF;
+
+    gfx_print("INT ");
+    gfx_print_hex(int_no);
+    gfx_print(" ERR ");
+    gfx_print_hex(err_code);
+    gfx_print("\n");
+
+    switch (int_no) {
+        case 0:
+            gfx_print("Divide-by-zero fault\n");
+            break;
+
+        case 33: { // IRQ1: Keyboard
+            regs_t regs = { .int_no = int_no, .err_code = err_code };
+            keyboard_handler(&regs, inb(0x60));
+            break;
+        }
+
+        case 160:
+            SERIAL_LOG("Spurious interrupt 160 received and ignored.\n");
+            gfx_print("Spurious interrupt 160 received and ignored.\n");
+            break;
+
+        case 208:
+            outb(0xA0, 0x20); // EOI to slave PIC
+            outb(0x20, 0x20); // EOI to master PIC
+            break;
+
+        default:
+            gfx_print("Unhandled interrupt: ");
+            gfx_print_decimal(int_no);
+            gfx_print(" (err=");
+            gfx_print_decimal(err_code);
+            gfx_print(")\n");
+            break;
+    }
+
+    // Send EOI for hardware IRQs (32–47)
+    if (int_no >= 32 && int_no < 48) {
+        if (int_no >= 40) outb(0xA0, 0x20); // Slave PIC
+        outb(0x20, 0x20);                   // Master PIC
+    }
+}
+
+// ────────────────
+// Exception Handlers
+// ────────────────
+void divide_by_zero_handler() {
+    gfx_print("Divide-by-zero fault!\n");
+    // Optional: halt or recover
+}
+
+// ────────────────
+// IDT Gate Setup
+// ────────────────
+void set_idt_gate(int n, uint32_t handler) {
+    idt[n].base_low  = handler & 0xFFFF;
+    idt[n].base_high = (handler >> 16) & 0xFFFF;
+    idt[n].sel       = 0x08;     // Kernel code segment
+    idt[n].always0   = 0;
+    idt[n].flags     = 0x8E;     // Present, ring 0, interrupt gate
+}
+
+// ────────────────
+// IDT Initialization
+// ────────────────
+void init_idt() {
+    idt_ptr.limit = sizeof(idt_entry_t) * IDT_ENTRIES - 1;
+    idt_ptr.base  = (uint32_t)&idt;
+
+    memset(&idt, 0, sizeof(idt));
+
+    set_idt_gate(0,  (uint32_t)isr0);   // Divide-by-zero
+    set_idt_gate(33, (uint32_t)irq33);  // Keyboard
+    set_idt_gate(32, (uint32_t)irq0_handler); // Timer
+    idt_flush((uint32_t)&idt_ptr);
+}
+
+
+void timer_handler(struct regs* r) {
+    static uint32_t tick_count = 0;
+    tick_count++;
+
+    if (tick_count <= 10) {
+        gfx_print("Tick #");
+        gfx_print_decimal(tick_count);
+        gfx_print("\n");
+        gfx_print_hex(r->ebx);
+    }
+    send_eoi(32); // assuming regs contains int_no
+}
+
+
+void send_eoi(uint8_t int_no) { 
+       if (int_no >= 32 && int_no < 48) {
+        if (int_no >= 40) outb(0xA0, 0x20); // Slave PIC
+        outb(0x20, 0x20);                   // Master PIC
+    }
+}
+
+// ────────────────
+// PIC Initialization
+// ────────────────
+extern void init_pic();
+
+// static void pic_init(void) {
+//     uint8_t mask1 = inb(0x21);
+//     outb(0x21, mask1 & ~0x02); // Unmask IRQ1 (keyboard)
+
+//     outb(0x20, 0x11);  // ICW1: Master
+//     outb(0xA0, 0x11);  // ICW1: Slave
+
+//     outb(0x21, 0x20);  // ICW2: Master offset 0x20
+//     outb(0xA1, 0x28);  // ICW2: Slave offset 0x28
+
+//     outb(0x21, 0x04);  // ICW3: Master has slave at IRQ2
+//     outb(0xA1, 0x02);  // ICW3: Slave connected to IRQ2
+
+//     outb(0x21, 0x01);  // ICW4: 8086 mode
+//     outb(0xA1, 0x01);  // ICW4: 8086 mode
+
+//     outb(0x21, 0xFE); // Unmask IRQ0 only
+//     outb(0xA1, 0xFF); // Mask all on slave
+//     gfx_print("PICs initialized and keyboard unmasked.\n");
+// }
+
+// ────────────────
+// System Initialization
+// ────────────────
+void keyboard_service_handler(regs_t* regs) {
+    uint8_t scancode = inb(0x60);
+    //uint8_t status = inb(0x64);
+    // if (status & 0x01) {
+    //     gfx_print("Keyboard has data\n");
+    //     gfx_print_hex(regs->ebx);
+    // }
+    keyboard_handler(regs,scancode);
+    send_eoi(33);
+}
+    
+
 void interrupts_system_init(void) {
     gfx_print("Setting up interrupt system...\n");
 
-    gdt_init();  // Segment setup
-    idt_init();  // IDT + IRQ stubs
-
+    gdt_init();       // Segment setup
+    init_idt();       // IDT + IRQ stubs
+    gfx_print("IDT initialized.\n");
+    gfx_print("Remapping PIC...\n");
+    init_pic();       // PIC remapping
+    register_interrupt_handler(0, divide_by_zero_handler);
+    register_interrupt_handler(32, timer_handler);
+    register_interrupt_handler(33, keyboard_service_handler);
+    GFX_LOG_MIN("Keyboard handler registered for IRQ1 (vector 33).\n");
     gfx_print("GDT and IDT setup complete.\n");
 }
 
-// Optional quantum-aware interrupt enhancements
+// ────────────────
+// Quantum Enhancements
+// ────────────────
 void quantum_interrupts_init(void) {
     gfx_print("Quantum-aware interrupt handling enabled.\n");
 }

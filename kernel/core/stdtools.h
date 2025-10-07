@@ -24,6 +24,8 @@ typedef unsigned long long uintptr_t;
 typedef unsigned long uintptr_t;
 #endif
 
+#include "stdarg.h"
+
 #include "stdbool.h"
 
 // NULL

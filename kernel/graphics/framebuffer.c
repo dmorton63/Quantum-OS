@@ -191,6 +191,35 @@ void framebuffer_clear(void) {
     info->cursor_y = 0;
 }
 
+void splash_clear(rgb_color_t bg) {
+    for (uint32_t y = 0; y < fb_height; y++) {
+        for (uint32_t x = 0; x < fb_width; x++) {
+            framebuffer_draw_pixel(x, y, bg);
+        }
+    }
+}
+
+void splash_box(uint32_t w, uint32_t h, rgb_color_t color) {
+    uint32_t x0 = (fb_width - w) / 2;
+    uint32_t y0 = (fb_height - h) / 2;
+
+    for (uint32_t y = 0; y < h; y++) {
+        for (uint32_t x = 0; x < w; x++) {
+            framebuffer_draw_pixel(x0 + x, y0 + y, color);
+        }
+    }
+}
+
+void splash_title(const char* text, rgb_color_t fg, rgb_color_t bg) {
+    uint32_t len = strlen(text);
+    uint32_t x0 = (fb_width / 2) - (len * 8 / 2);
+    uint32_t y0 = fb_height / 2 - 8;
+
+    for (uint32_t i = 0; i < len; i++) {
+        framebuffer_draw_char(x0 + i * 8, y0, text[i], fg, bg);
+    }
+}
+
 void framebuffer_set_cursor(uint32_t x, uint32_t y) {
     display_info_t* info = graphics_get_display_info();
 

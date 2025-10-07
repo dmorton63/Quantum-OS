@@ -11,6 +11,7 @@
 #include "../shell/shell.h"
 #include "../graphics/graphics.h"
 #include "../graphics/framebuffer.h"
+#include "kernel.h"
 // Function declarations from other modules
 void gdt_init(void);
 void idt_init(void);  
@@ -111,17 +112,31 @@ void kernel_main(uint32_t magic, multiboot_info_t* mbi) {
     
     // Initialize IDT and interrupts
     gfx_print("Initializing IDT and interrupts...\n");
-    idt_init();
+    //idt_init();
+    __asm__ volatile("cli");
     interrupts_system_init();
     
     // Initialize keyboard driver
     gfx_print("Initializing keyboard driver...\n");
+    draw_splash("QuantumOS Keyboard Test");
     keyboard_init();
-    
-    gfx_print("QuantumOS kernel initialization complete!\n");
-    
+    //shell_init();
+    rgb_color_t deep_blue = { .red = 0x00, .green = 0x33, .blue = 0x66 };
+    splash_clear(deep_blue);
+    splash_box(400, 200, (rgb_color_t){ .red = 0xFF, .green = 0xFF, .blue = 0xFF, .alpha = 0xFF });
+    splash_title("QuantumOS Keyboard Test", (rgb_color_t){ .red = 0x00, .green = 0x00, .blue = 0x00, .alpha = 0xFF }, (rgb_color_t){ .red = 0xFF, .green = 0xFF, .blue = 0xFF, .alpha = 0xFF });
+    //shell_run();
+
+    //gfx_print("QuantumOS kernel initialization complete!\n");
+     //   __asm__ volatile("cli");
+        __asm__ volatile("sti");
     // Enter main kernel loop
-    kernel_main_loop();
+    //kernel_main_loop();
+    while(1)
+    {
+
+        __asm__ volatile("hlt");
+    }
 }
 
 /**
@@ -154,3 +169,27 @@ void kernel_panic(const char* message) {
         __asm__ volatile("hlt");
     }
 }
+
+
+
+const char* splash[] = {
+    "╔══════════════════════════════════════╗",
+    "║         Welcome to QuantumOS        ║",
+    "║        The Ritual Has Begun         ║",
+    "╚══════════════════════════════════════╝",
+};
+
+void draw_splash(const char* title) {
+    volatile uint16_t* fb = (uint16_t*)0xB8000;
+    uint8_t attr = (BLUE << 4) | WHITE;
+
+    for (int i = 0; i < 80 * 25; i++) {
+        fb[i] = (attr << 8) | ' ';
+    }
+
+    for (int i = 0; title[i]; i++) {
+        fb[40 - (strlen(title) / 2) + i] = (attr << 8) | title[i];
+    }
+}
+
+

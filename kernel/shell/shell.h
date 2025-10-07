@@ -9,6 +9,8 @@ void show_prompt(const char* path);
 void process_command(const char* command);
 void screen_printf(const char* format, ...);
 
+void shell_run(void);
+
 // Shell state
 typedef struct {
     char current_path[256];

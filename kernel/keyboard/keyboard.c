@@ -27,14 +27,16 @@ static const char scancode_to_ascii_upper[128] = {
     0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0     // 0x70-0x7F
 };
 
+
+
 static keyboard_state_t kb_state;
 
 bool keyboard_init(void) {
     GFX_LOG_MIN("Initializing keyboard subsystem...\n");
-    
+
     // Clear keyboard state
     memset(&kb_state, 0, sizeof(keyboard_state_t));
-    
+
     // Initialize buffer pointers
     kb_state.buffer_head = 0;
     kb_state.buffer_tail = 0;
@@ -44,14 +46,50 @@ bool keyboard_init(void) {
     // Clear all modifier states
     memset(&kb_state.modifiers, 0, sizeof(key_modifiers_t));
 
+    // --- Enable keyboard IRQs on the 8042 controller ---
+    // Read command byte
+    outb(KEYBOARD_COMMAND_PORT, 0x20); // 0x20 = Read Command Byte
+    uint8_t command_byte = inb(KEYBOARD_DATA_PORT);
+    // Set bit 0 (enable IRQ1)
+    command_byte |= 0x01;
+    // Write command byte
+    outb(KEYBOARD_COMMAND_PORT, 0x60); // 0x60 = Write Command Byte
+    outb(KEYBOARD_DATA_PORT, command_byte);
+
     return true;
 }
 
-void keyboard_handler(regs_t* regs) {
-    (void)regs;
-    uint8_t scancode = inb(KEYBOARD_DATA_PORT);
-    keyboard_process_scancode(scancode);
+
+
+void keyboard_handler(regs_t* regs, uint8_t scancode) {
+
+
+
+    static uint32_t interrupt_count = 0;
+    interrupt_count++;
+    keyboard_process_scancode(scancode);    
+
+    //gfx_print_decimal(scancode);
+    // Debug: Show first few interrupts
+    // if (interrupt_count <= 5) {
+    //     gfx_print("Keyboard interrupt #");
+    //     gfx_print_decimal(interrupt_count);
+    //     gfx_print("\n");
+    // }
+            // if (int_no >= 40) outb(0xA0, 0x20); // Slave PIC
+    keyboard_send_eoi(regs->int_no);
+
+        // if (int_no >= 32 && int_no < 48) {
+
 }
+
+void keyboard_send_eoi(uint32_t int_no) {
+    if (int_no >= 32 && int_no < 48) {
+        if (int_no >= 40) outb(0xA0, 0x20); // Slave PIC
+        outb(0x20, 0x20);                   // Master PIC
+    }
+}
+
 
 void keyboard_process_scancode(uint8_t scancode) {
     SERIAL_LOG_HEX("Keyboard scancode: 0x", scancode);
@@ -225,6 +263,11 @@ void keyboard_add_to_buffer(char c) {
         }
     }
 }
+
+struct keyboard_state* get_keyboard_state(void) {
+    return &kb_state;
+}
+
 
 char keyboard_get_char(void) {
     if (kb_state.buffer_count == 0) {
