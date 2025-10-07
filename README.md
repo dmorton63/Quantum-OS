@@ -3,6 +3,10 @@
 
 <img width="800" height="800" alt="a graphical boot ban" src="https://github.com/user-attachments/assets/258b7e49-0d7c-4bba-abfe-cc03b783bafd" />
 
+## First Run of Quantum OS with quantum enabled.
+
+<img width="1292" height="857" alt="quantum_first_Run" src="https://github.com/user-attachments/assets/d37830f7-ce56-443c-80d2-6424a517f40b" />
+
 ## Overview
 QuantumOS is a groundbreaking operating system that integrates four revolutionary technologies:
 
