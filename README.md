@@ -91,7 +91,6 @@ This is revolutionary technology - contributions welcome!
 
 *Building the future of operating systems*# Quantum-OS
 
-
 ## Features
 
 ### Core System
