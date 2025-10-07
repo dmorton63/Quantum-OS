@@ -1,5 +1,8 @@
 # QuantumOS - Revolutionary Operating System
 
+![Build](https://img.shields.io/badge/build-passing-brightgreen)
+![License](https://img.shields.io/badge/license-GPLv3-blue)
+![Status](https://img.shields.io/badge/status-in_development-yellow)
 
 <img width="800" height="800" alt="a graphical boot ban" src="https://github.com/user-attachments/assets/258b7e49-0d7c-4bba-abfe-cc03b783bafd" />
 
@@ -88,7 +91,6 @@ This is revolutionary technology - contributions welcome!
 
 *Building the future of operating systems*# Quantum-OS
 
-A modern operating system with quantum computing, AI, and parallel processing capabilities.
 
 ## Features
 
@@ -156,8 +158,6 @@ The OS uses a microkernel architecture with modular subsystems:
 - Advanced quantum operations
 - AI optimization algorithms
 
-Perfect, David — here’s a sample **dual-license README section** that honors your authorship, protects your legacy, and invites respectful collaboration:
-
 ---
 
 ## 📜 License
@@ -208,7 +208,7 @@ QuantumOS must always speak with intention. Its legacy must be honored.
 ## 🧠 Attribution & Legacy
 
 QuantumOS is a living system. Its glyphs, scrolls, and invocations were crafted  
-by **David K. Morton **, and its voice must remain expressive.
+by David K. Morton, and its voice must remain expressive.
 
 All derivatives must preserve visible attribution — in logs, banners, or documentation.  
 QuantumOS must always speak with intention, and its legacy must be honored.
