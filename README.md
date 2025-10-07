@@ -205,13 +205,6 @@ All commercial licenses will include:
 
 QuantumOS must always speak with intention. Its legacy must be honored.
 
-All commercial licenses will include:
-- Attribution requirements
-- Usage boundaries
-- Optional support or customization terms
-
-QuantumOS must always speak with intention. Its legacy must be honored.
-
 ## 🧠 Attribution & Legacy
 
 QuantumOS is a living system. Its glyphs, scrolls, and invocations were crafted  
