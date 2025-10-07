@@ -90,8 +90,6 @@ This is revolutionary technology - contributions welcome!
 
 *Building the future of operating systems*# Quantum-OS
 
-A modern operating system with quantum computing, AI, and parallel processing capabilities.
-
 ## Features
 
 ### Core System
@@ -210,7 +208,7 @@ QuantumOS must always speak with intention. Its legacy must be honored.
 ## 🧠 Attribution & Legacy
 
 QuantumOS is a living system. Its glyphs, scrolls, and invocations were crafted  
-by **David K. Morton **, and its voice must remain expressive.
+by David K. Morton, and its voice must remain expressive.
 
 All derivatives must preserve visible attribution — in logs, banners, or documentation.  
 QuantumOS must always speak with intention, and its legacy must be honored.
