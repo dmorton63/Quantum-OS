@@ -19,6 +19,8 @@ SRC_DIR     = kernel
 BOOT_DIR    = boot
 BUILD_DIR   = build
 ISO_DIR     = $(BUILD_DIR)/iso
+QUANTUM_DIR = kernel/quantum
+#QUANTUM_OBJ = $(BUILD_DIR)/$(QUANTUM_DIR)/quantum.o
 
 # Auto-discover sources
 C_SRC       := $(shell find $(SRC_DIR) -name "*.c")
@@ -63,10 +65,14 @@ $(BUILD_DIR)/%.bin: %.asm | prepare_dirs
 	@echo "Building boot binary $<..."
 	$(AS) -f bin $< -o $@
 
+$(QUANTUM_OBJ):
+	@echo "[quantum] Building quantum.o..."
+	@$(MAKE) -C $(QUANTUM_DIR)
+
 # Link kernel
-$(BUILD_DIR)/kernel.bin: $(C_OBJS) $(ASM_OBJS) $(SRC_DIR)/linker.ld
+$(BUILD_DIR)/kernel.bin: $(C_OBJS) $(ASM_OBJS) $(QUANTUM_OBJ) $(SRC_DIR)/linker.ld
 	@echo "Linking kernel..."
-	$(LD) $(LDFLAGS) $(ASM_OBJS) $(C_OBJS) -o $(BUILD_DIR)/kernel.elf
+	$(LD) $(LDFLAGS) $(ASM_OBJS) $(C_OBJS) $(QUANTUM_OBJ) -o $(BUILD_DIR)/kernel.elf
 	$(OBJCOPY) -O binary $(BUILD_DIR)/kernel.elf $@
 
 # Create ISO image
@@ -92,6 +98,7 @@ debug: $(BUILD_DIR)/quantum_os.iso
 clean:
 	@echo "Cleaning build..."
 	@rm -rf $(BUILD_DIR)
+	@$(MAKE) -C $(QUANTUM_DIR) clean
 
 # Install dependencies
 install-deps:

@@ -71,7 +71,7 @@ void serial_debug_decimal(uint32_t value) {
 /**
  * Main kernel loop for keyboard testing
  */
-void kernel_main_loop(void) {
+int kernel_main_loop(void) {
     gfx_print("\n=== QuantumOS Interactive Shell ===\n");
     gfx_print("Keyboard input enabled. Type 'help' for commands.\n\n");
     
@@ -91,7 +91,7 @@ void kernel_main_loop(void) {
 /**
  * Main kernel entry point - simplified for keyboard testing
  */
-void kernel_main(uint32_t magic, multiboot_info_t* mbi) {
+int kernel_main(uint32_t magic, multiboot_info_t* mbi) {
     // Parse multiboot info first to set verbosity level
     multiboot_parse_info(magic, mbi);
     
@@ -132,11 +132,13 @@ void kernel_main(uint32_t magic, multiboot_info_t* mbi) {
         __asm__ volatile("sti");
     // Enter main kernel loop
     //kernel_main_loop();
-    while(1)
-    {
+    // while(1)
+    // {
 
-        __asm__ volatile("hlt");
-    }
+    //     __asm__ volatile("hlt");
+    // }
+
+    return;
 }
 
 /**

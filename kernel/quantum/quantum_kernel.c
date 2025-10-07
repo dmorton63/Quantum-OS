@@ -21,6 +21,27 @@ static quantum_entanglement_t* g_entanglements __attribute__((unused)) = NULL;
 static bool g_quantum_hardware_available = false;
 static uint32_t g_qubit_count = 0;
 
+/*
+    System entry point.  Switch from kernel_main() to quantum_kernel_main().
+*/
+
+void quantum_kernel_main(uint32_t magic, multiboot_info_t* mbi) {
+    GFX_LOG_MIN("QuantumOS main entry invoked.\n");
+    kernel_main(magic, mbi);
+    quantum_kernel_init();         // Initialize quantum core
+    quantum_drivers_init();        // Load quantum hardware
+    quantum_scheduler_init();      // Prepare scheduler
+
+    // Optionally spawn initial quantum process
+    quantum_process_create("init", 0);
+
+    // Enter main loop
+    while (true) {
+        quantum_scheduler_tick();
+        // Add sleep, input, or phase-aware logging here
+    }
+}
+
 /**
  * Initialize quantum kernel subsystem
  */

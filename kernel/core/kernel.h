@@ -47,7 +47,7 @@ enum vga_color {
 extern kernel_state_t g_kernel_state;
 
 // Core kernel functions
-void kernel_main(uint32_t multiboot_magic, multiboot_info_t* multiboot_info);
+int kernel_main(uint32_t multiboot_magic, multiboot_info_t* multiboot_info);
 void kernel_early_init(void);
 void kernel_print_banner(void);
 int sprintf(char *buffer, const char *format, ...);

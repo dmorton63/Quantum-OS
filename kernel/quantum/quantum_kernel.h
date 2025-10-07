@@ -96,7 +96,8 @@ void quantum_drivers_init(void);
 // Quantum process management
 quantum_process_t* quantum_process_create(const char* name, uint32_t parent_qpid);
 void quantum_process_destroy(quantum_process_t* process);
-void quantum_process_set_state(quantum_process_t* process, quantum_state_t state);
+void quantum_kernel_main(uint32_t magic, multiboot_info_t *mbi);
+void quantum_process_set_state(quantum_process_t *process, quantum_state_t state);
 quantum_state_t quantum_process_measure_state(quantum_process_t* process);
 
 // Quantum scheduling

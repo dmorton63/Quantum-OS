@@ -20,7 +20,9 @@ multiboot_header:
     
 section .text
 global _start
-extern kernel_main
+;extern kernel_main
+extern quantum_kernel_main
+
 align 4
 _start:
 
@@ -47,7 +49,8 @@ letsjmp:
 
     push dword [multiboot_info]
     push dword [multiboot_magic]
-    call kernel_main
+    ;call kernel_main
+    call quantum_kernel_main
     add esp, 8
 
     jmp .halt
