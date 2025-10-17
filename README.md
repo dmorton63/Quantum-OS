@@ -11,7 +11,7 @@
 <img width="1292" height="857" alt="quantum_first_Run" src="https://github.com/user-attachments/assets/d37830f7-ce56-443c-80d2-6424a517f40b" />
 
 ## Overview
-# 10-16-20256 
+# 10-16-2025 
 # We are renaming QuantumOS to QARMA pronounced like Karma
 # Since there is already a QuantumOS out there is dedicated to QUANTUM Computing.
 # Directory structures and naming will remain the same to save on the time required to convert to the new name
