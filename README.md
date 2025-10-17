@@ -13,7 +13,7 @@
 ## Overview
 # 10-16-2025 
 # We are renaming QuantumOS to QARMA pronounced like Karma
-# Since there is already a QuantumOS out there is dedicated to QUANTUM Computing.
+# Since there is already a QuantumOS out there dedicated to QUANTUM Computing.
 # Directory structures and naming will remain the same to save on the time required to convert to the new name
 
 QARMA is a groundbreaking operating system that integrates four revolutionary technologies:
