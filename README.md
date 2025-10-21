@@ -1,22 +1,21 @@
-# QuantumOS - Revolutionary Operating System
+# QARMA-OS - Revolutionary Operating System
 
 ![Build](https://img.shields.io/badge/build-passing-brightgreen)
 ![License](https://img.shields.io/badge/license-GPLv3-blue)
 ![Status](https://img.shields.io/badge/status-in_development-yellow)
 
-<img width="800" height="800" alt="a graphical boot ban" src="https://github.com/user-attachments/assets/258b7e49-0d7c-4bba-abfe-cc03b783bafd" />
+<img width="800" height="800" alt="a cinematic logo for" src="https://github.com/user-attachments/assets/09b81ea7-7e9a-45e5-b2fb-6698c632440e" />
 
 ## First Run of QARMA OS with quantum enabled.
 
 <img width="1292" height="857" alt="quantum_first_Run" src="https://github.com/user-attachments/assets/d37830f7-ce56-443c-80d2-6424a517f40b" />
 
 ## Overview
-####  Name Changed 10/16/2025
-# QARMA 
-# pronounce like carma.
-####
+# 10-16-2025 
+# We are renaming QuantumOS to QARMA pronounced like Karma
+# Since there is already a QuantumOS out there dedicated to QUANTUM Computing.
+# Directory structures and naming will remain the same to save on refactoring
 
-# QuantumOS is a groundbreaking operating system that integrates four revolutionary technologies:
 QARMA is a groundbreaking operating system that integrates four revolutionary technologies:
 
 - **Quantum Processes**: Novel process management using quantum computing principles
