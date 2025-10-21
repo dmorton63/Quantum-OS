@@ -16,13 +16,13 @@ void shell_init(void) {
     
     gfx_print("QuantumOS Shell Initialized\n");
     gfx_print("Type 'help' for available commands\n\n");
-    show_prompt("/");
+    show_prompt(": ");
 }
 
 void show_prompt(const char* path) {
 
     char prompt[256];
-        snprintf(prompt, sizeof(prompt), "QuantumOS:%s$ ", path);
+        sprintf(prompt, "[Qarma OS]%s", path);
         gfx_print(prompt);
 }
 
@@ -42,11 +42,9 @@ void screen_printf(const char* format, ...) {
 }
 
 // Printf-style function for commands
-void gfx_printf(const char* format, ...) {
-    // Simple implementation - just pass to gfx_print for now
-    gfx_print(format);
-}
 
+// Simple printf implementation declaration (implemented in shell.c)
+extern void gfx_printf(const char* format, ...);
 // Screen manipulation functions are provided by graphics subsystem
 
 void screen_put_char(char c) {

@@ -58,6 +58,7 @@ uint8_t keyboard_get_scancode(void) {
     return v;
 }
 
+
 // Peek next scancode without consuming it. Returns true if a scancode is
 // available and writes it to *out.
 bool keyboard_peek_scancode(uint8_t *out) {
@@ -100,6 +101,7 @@ bool keyboard_peek_char(char *out) {
     __asm__ volatile("sti");
     return has;
 }
+
 
 bool keyboard_init(void) {
     GFX_LOG_MIN("Initializing keyboard subsystem...\n");

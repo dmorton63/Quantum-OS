@@ -14,11 +14,21 @@
 #include "kernel.h"
 #include "../graphics/popup.h"
 #include "../graphics/message_box.h"
+
+#include "../scheduler/qarma_schedtypedefs.h"
+#include "../scheduler/qarma_win_handle.h"
+#include "../scheduler/qarma_splash_app.h"  // Contains splash_app and its functions
+
+extern QARMA_WIN_HANDLER global_win_handler;
+extern QARMA_APP_HANDLE splash_app;
+
+
 // Function declarations from other modules
 void gdt_init(void);
 void idt_init(void);  
 void interrupts_system_init(void);
 void multiboot_parse_info(uint32_t magic, multiboot_info_t* mbi);
+uint32_t get_ticks(void);
 
 // Basic types
 typedef unsigned int size_t;
@@ -90,6 +100,54 @@ int kernel_main_loop(void) {
     }
 }
 
+
+int kernel_splash_test()
+{
+// Initialize timer at QARMA_TICK_RATE
+    //init_timer(QARMA_TICK_RATE);
+
+    // Initialize splash app
+    splash_app.init(&splash_app);
+
+    uint32_t last_tick = get_ticks();
+    QARMA_TICK_CONTEXT ctx = {
+        .tick_count = 0,
+        .delta_time = 0.0f,
+        .uptime_seconds = 0.0f
+    };
+
+    while (true) {
+        uint32_t current_tick = get_ticks();
+          if (current_tick > last_tick) {
+            uint32_t ticks_elapsed = current_tick - last_tick;
+            last_tick = current_tick;
+
+            ctx.tick_count += ticks_elapsed;
+            ctx.delta_time = (float)ticks_elapsed / (float)QARMA_TICK_RATE;
+            ctx.uptime_seconds += ctx.delta_time;
+
+
+            splash_app.update(&splash_app, &ctx);
+            global_win_handler.update_all(&global_win_handler, &ctx);
+
+            if (global_win_handler.render_all) {
+                global_win_handler.render_all(&global_win_handler);
+            }
+
+            if (splash_app.main_window == NULL) {
+                break;
+            }
+        }
+
+        sleep_ms(1);  // Let interrupts breathe
+    }
+
+    splash_app.shutdown(&splash_app);
+    return 0;
+
+
+}
+
 /**
  * Main kernel entry point - simplified for keyboard testing
  */
@@ -102,8 +160,8 @@ int kernel_main(uint32_t magic, multiboot_info_t* mbi) {
     framebuffer_init();
      /* Initialize message box as soon as framebuffer is available so
          any early debug messages are captured and displayed in the UI. */
-     message_box_init(80);
-     message_box_push("Framebuffer initialized.");
+    //  message_box_init(80);
+    //  message_box_push("Framebuffer initialized.");
     // framebuffer_test();
     //     while (1) {
     //     // CPU halt to reduce CPU usage while waiting for input
@@ -124,47 +182,56 @@ int kernel_main(uint32_t magic, multiboot_info_t* mbi) {
     
     // Initialize keyboard driver
     gfx_print("Initializing keyboard driver...\n");
-    draw_splash("QuantumOS Keyboard Test");
+    //draw_splash("QuantumOS Keyboard Test");
     keyboard_init();
     // Ensure higher-level keyboard processing is enabled by default so
     // the interactive shell and commands are available. Use the `kbd`
     // command at runtime to toggle processing if needed.
     keyboard_set_enabled(true);
-    // Enable interrupts now that keyboard and IDT are initialized so
+    // now that keyboard and IDT are initialized so
     // modal popups can use the interrupt-driven keyboard buffer.
     __asm__ volatile("sti");
-    message_box_push("System initialized. Ready.");
+    //message_box_push("System initialized. Ready."); 
+    gfx_print("Keyboard driver initialized.\n");
+    //__asm__ volatile("int $0x2c");
     rgb_color_t deep_blue = { .red = 0x00, .green = 0x33, .blue = 0x66 };
+    rgb_color_t splash_bg = { .red = 0x46, .green = 0x82, .blue = 0xB4, .alpha = 0xFF }; // Steel Blue
+    rgb_color_t text_fg = { .red = 0x00, .green = 0x00, .blue = 0x00, .alpha = 0xFF }; // White
     splash_clear(deep_blue);
-    splash_box(400, 200, (rgb_color_t){ .red = 0xFF, .green = 0xFF, .blue = 0xFF, .alpha = 0xFF });
-    splash_title("QuantumOS Keyboard Test", (rgb_color_t){ .red = 0x00, .green = 0x00, .blue = 0x00, .alpha = 0xFF }, (rgb_color_t){ .red = 0xFF, .green = 0xFF, .blue = 0xFF, .alpha = 0xFF });
+
+    //splash_clear(deep_blue);
+  
+    splash_box(400, 200, splash_bg);
+    splash_title("QARMA with Keyboard Test", text_fg, splash_bg);
+
+    kernel_splash_test();
      /* Redraw the message box after splash is drawn since splash_clear()
          overwrites the framebuffer. This ensures the bottom message area is
          visible to the user. */
-     extern void message_box_render(void);
-     message_box_render();
+     //extern void message_box_render(void);
+    //  message_box_render();
     //shell_run();
     
-    PopupParams params = {
-    .x = 100,
-    .y = 80,
-    .message = "Save changes?",
-    .title = "Confirm",
-    .title_color = { .red = 0xFF, .green = 0xFF, .blue = 0xFF, .alpha = 0xFF },
-    .title_height = 26,
-    .bg_color = (rgb_color_t){ .red = 0x22, .green = 0x22, .blue = 0x22, .alpha = 0xFF },
-    .border_color = (rgb_color_t){ .red = 0xFF, .green = 0xFF, .blue = 0xFF, .alpha = 0xFF },
-    .text_color = { .red = 0x00, .green = 0xFF, .blue = 0x00, .alpha = 0xFF },  // if using rgb_color_t
-    .timeout_ms = 0,
-    .dismiss_on_esc = true,
-    .confirm_on_enter = true,
-    .on_confirm = confirm_action,
-    .on_cancel = cancel_action
-};
+//     PopupParams params = {
+//     .x = 100,
+//     .y = 80,
+//     .message = "Save changes?",
+//     .title = "Confirm",
+//     .title_color = { .red = 0xFF, .green = 0xFF, .blue = 0xFF, .alpha = 0xFF },
+//     .title_height = 26,
+//     .bg_color = (rgb_color_t){ .red = 0x22, .green = 0x22, .blue = 0x22, .alpha = 0xFF },
+//     .border_color = (rgb_color_t){ .red = 0xFF, .green = 0xFF, .blue = 0xFF, .alpha = 0xFF },
+//     .text_color = { .red = 0x00, .green = 0xFF, .blue = 0x00, .alpha = 0xFF },  // if using rgb_color_t
+//     .timeout_ms = 0,
+//     .dismiss_on_esc = true,
+//     .confirm_on_enter = true,
+//     .on_confirm = confirm_action,
+//     .on_cancel = cancel_action
+// };
 
 
 
-show_popup(&params);
+// show_popup(&params);
     //gfx_print("QuantumOS kernel initialization complete!\n");
      //   __asm__ volatile("cli");
         __asm__ volatile("sti");

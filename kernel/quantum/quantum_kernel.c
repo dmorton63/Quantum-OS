@@ -10,6 +10,7 @@
 #include "../graphics/graphics.h"
 #include "../config.h"
 #include "../core/clock_overlay.h"
+#include "../core/memory.h"
 
 // Global quantum system state
 static quantum_process_t* g_quantum_processes = NULL;

@@ -3,6 +3,7 @@
 #include "../core/string.h"  
 #include "../core/memory.h"
 static int fat16_mount(blockdev_t* dev, vfs_node_t* mountpoint) {
+    (void)dev; (void)mountpoint;
     // TODO: Implement FAT16 mount logic
     return 0;
 }

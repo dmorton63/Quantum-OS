@@ -35,6 +35,11 @@ extern irqkeyboard
 global irq33
 irq33:
     jmp irqkeyboard
+%elif %1 = 44
+extern irqmouse
+global irq44
+irq44:
+    jmp irqmouse
 %else
     global irq%1
 irq%1:

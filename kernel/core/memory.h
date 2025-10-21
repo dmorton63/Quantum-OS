@@ -17,7 +17,7 @@ typedef struct Block {
 
 #define BLOCK_SIZE sizeof(Block)
 
-Block* freeList = NULL;
+
 
 // Page size and alignment
 #define PAGE_SIZE 0x1000  // 4KB pages

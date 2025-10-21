@@ -14,13 +14,14 @@
 #include "../keyboard/keyboard_types.h"
 #include "../core/clock_overlay.h"
 #include "../core/timer.h"
-
+#include "../core/input/mouse.h"
 // ────────────────
 // External Symbols
 // ────────────────
 extern void idt_flush(uint32_t);
 extern void irq33();
 extern void isr0();
+extern void irq44();
 extern void irq0_handler();
 
 // ────────────────
@@ -116,15 +117,22 @@ void init_idt() {
     set_idt_gate(0,  (uint32_t)isr0);   // Divide-by-zero
     set_idt_gate(33, (uint32_t)irq33);  // Keyboard
     set_idt_gate(32, (uint32_t)irq0_handler); // Timer
+    set_idt_gate(44, (uint32_t)irq44); // Mouse IRQ12
     idt_flush((uint32_t)&idt_ptr);
 }
 
 
 void timer_handler(struct regs* r) {
+    (void)r; // Suppress unused parameter warning
     static uint32_t tick_count = 0;
     tick_count++;
-    clock_tick();
     inc_ticks();
+    clock_tick();
+
+    // if(tick_count % 10 == 0) {
+    //     // Every second at 100Hz
+    //     gfx_print("Tick\n");
+    // }   
     // Periodically flush any IRQ-queued debug lines to serial so they
     // become visible in headless captures.
     extern void irq_log_flush_to_serial(void);
@@ -141,7 +149,7 @@ void send_eoi(uint8_t int_no) {
 }
 
 // ────────────────
-// PIC Initialization
+// PIC Initialization   NOT USED - moved to assembly pic.asm
 // ────────────────
 //extern void init_pic();
 
@@ -201,6 +209,7 @@ void interrupts_system_init(void) {
     register_interrupt_handler(0, divide_by_zero_handler);
     register_interrupt_handler(32, timer_handler);
     register_interrupt_handler(33, keyboard_service_handler);
+    register_interrupt_handler(44, mouse_handler);
     GFX_LOG_MIN("Keyboard handler registered for IRQ1 (vector 33).\n");
     gfx_print("GDT and IDT setup complete.\n");
 }

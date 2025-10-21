@@ -10,6 +10,7 @@
 
 // Display mode types
 typedef enum {
+    DISPLAY_MODE_UNDEFINED = -1,
     DISPLAY_MODE_TEXT_VGA = 0,      // Standard VGA text mode 80x25
     DISPLAY_MODE_FRAMEBUFFER = 1,   // Linear framebuffer (VESA/GOP)
     DISPLAY_MODE_VGA_GRAPHICS = 2,  // VGA 320x200x256 graphics mode

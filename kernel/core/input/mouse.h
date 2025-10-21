@@ -17,4 +17,8 @@ typedef struct {
 mouse_state_t* get_mouse_state(void);
 void update_mouse_state_from_packet(uint8_t packet[3]);
 
-#endif 
+#endif
+
+void mouse_handler();
+
+void parse_mouse_packet(uint8_t packet[3]);

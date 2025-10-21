@@ -74,6 +74,7 @@ vfs_node_t* vfs_open(const char* path) {
 
 
 int vfs_read(vfs_node_t* node, void* buf, size_t size, size_t offset) {
+(void)node; (void)buf; (void)size; (void)offset;
     // For demo, just return 0; real FS would implement this
     return 0;
 }

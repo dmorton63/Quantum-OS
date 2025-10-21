@@ -8,6 +8,7 @@
 #include "parallel_engine.h"
 #include "../core/kernel.h"
 #include "../graphics/graphics.h"
+#include "../core/memory.h"
 
 // Global parallel engine state
 static cpu_core_t* g_cpu_cores = NULL;

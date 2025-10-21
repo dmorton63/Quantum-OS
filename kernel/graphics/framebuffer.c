@@ -8,16 +8,29 @@
 #include "../core/io.h"
 #include "../core/boot_log.h"
 #include "../config.h"
+#include "../core/math.h"
+#include "../core/memory.h"
+#include "../scheduler/qarma_win_handle.h"
 
 // Debug functions now handled by config.h macros
 
 // Forward declarations
 void framebuffer_scroll(void);
 void framebuffer_draw_char(uint32_t x, uint32_t y, char c, rgb_color_t fg, rgb_color_t bg);
+void draw_scaled_text_centered(int cx, int y, const char* text, int scale, rgb_color_t fg, rgb_color_t bg);
+
+// framebuffer.c
+
+const rgb_color_t COLOR_ORBIT   = { .red = 0xFF, .green = 0xFF, .blue = 0xFF, .alpha = 0xFF };
+const rgb_color_t COLOR_NUCLEUS = { .red = 0xFF, .green = 0xD7, .blue = 0x00, .alpha = 0xFF };
+const rgb_color_t COLOR_DEEP_BLUE = { .red = 0x00, .green = 0x33, .blue = 0x66, .alpha = 0xFF };
 
 static uint32_t* framebuffer_ptr = NULL;
 // Expose a raw pointer used by fb_* helpers
 uint32_t* fb_ptr = NULL;
+// Backing store for composition
+static uint32_t* backing_store = NULL;
+static bool fb_dirty = false;
 static uint32_t fb_width = 0;
 static uint32_t fb_height = 0;
 static uint32_t fb_pitch = 0;
@@ -87,8 +100,18 @@ void framebuffer_init(void) {
     info->cursor_x = 0;
     info->cursor_y = 0;
     
-    // Don't auto-clear the framebuffer - let existing content show
-    // framebuffer_clear(); // Commented out to preserve initialization messages
+    // Allocate backing store for composition
+    size_t pixels = fb_width * fb_height;
+    backing_store = (uint32_t*)malloc(pixels * sizeof(uint32_t));
+    if (backing_store) {
+        // Initialize backing store with current framebuffer content
+        for (uint32_t y = 0; y < fb_height; y++) {
+            for (uint32_t x = 0; x < fb_width; x++) {
+                uint32_t offset = (y * fb_pitch + x * (fb_bpp / 8)) / 4;
+                backing_store[offset] = framebuffer_ptr[offset];
+            }
+        }
+    }
     
     // DEBUG: Force draw some test characters directly to verify framebuffer works
     framebuffer_draw_char(0, 0, 'T', (rgb_color_t){255,255,255,255}, (rgb_color_t){0,0,0,255});
@@ -196,33 +219,46 @@ void framebuffer_clear(void) {
 }
 
 void splash_clear(rgb_color_t bg) {
+    uint32_t pixel = (bg.blue << 0) | (bg.green << 8) | (bg.red << 16) | (bg.alpha << 24);
     for (uint32_t y = 0; y < fb_height; y++) {
         for (uint32_t x = 0; x < fb_width; x++) {
-            framebuffer_draw_pixel(x, y, bg);
+            uint32_t offset = (y * fb_pitch + x * (fb_bpp / 8)) / 4;
+            if (backing_store) backing_store[offset] = pixel;
+            framebuffer_ptr[offset] = pixel;
         }
     }
 }
+
+uint32_t box_top_y = 0;
 
 void splash_box(uint32_t w, uint32_t h, rgb_color_t color) {
     uint32_t x0 = (fb_width - w) / 2;
     uint32_t y0 = (fb_height - h) / 2;
+    uint32_t box_x0 = (fb_width - w) / 2;
+    uint32_t box_y0 = (fb_height - h) / 2;
 
+    uint32_t atom_cx = box_x0 + w / 2;
+    uint32_t atom_cy = box_y0 + h / 2;
+
+    box_top_y = y0;
+    uint32_t pixel = (color.blue << 0) | (color.green << 8) | (color.red << 16) | (color.alpha << 24);
     for (uint32_t y = 0; y < h; y++) {
         for (uint32_t x = 0; x < w; x++) {
-            framebuffer_draw_pixel(x0 + x, y0 + y, color);
+            uint32_t px = x0 + x;
+            uint32_t py = y0 + y;
+            uint32_t offset = (py * fb_pitch + px * (fb_bpp / 8)) / 4;
+            if (backing_store) backing_store[offset] = pixel;
+            framebuffer_ptr[offset] = pixel;
         }
     }
+        draw_atom(atom_cx, atom_cy);
 }
 
-void splash_title(const char* text, rgb_color_t fg, rgb_color_t bg) {
-    uint32_t len = strlen(text);
-    uint32_t x0 = (fb_width / 2) - (len * 8 / 2);
-    uint32_t y0 = fb_height / 2 - 8;
-
-    for (uint32_t i = 0; i < len; i++) {
-        framebuffer_draw_char(x0 + i * 8, y0, text[i], fg, bg);
-    }
+void splash_title(const char *text, rgb_color_t fg, rgb_color_t bg) {
+    uint32_t y0 = box_top_y + 10;  // 10px below box top
+    draw_scaled_text_centered(fb_width / 2, y0, text, 2, fg, bg);
 }
+
 
 void framebuffer_set_cursor(uint32_t x, uint32_t y) {
     display_info_t* info = graphics_get_display_info();
@@ -314,7 +350,14 @@ void fb_draw_text(uint32_t x, uint32_t y, const char *text, rgb_color_t color) {
     }
 }
 
-
+void fb_draw_text_with_bg(uint32_t x, uint32_t y, const char *text,
+                          rgb_color_t fg, rgb_color_t bg) {
+    while (*text) {
+        framebuffer_draw_char(x, y, *text, fg, bg);
+        x += 8;
+        text++;
+    }
+}
 // VESA/GOP detection and initialization (placeholder)
 bool framebuffer_detect_vesa(void) {
     // TODO: Implement VESA mode detection
@@ -368,6 +411,46 @@ void framebuffer_test(void) {
     framebuffer_draw_pixel(2, 1, red);
 }
 
+// Compose the screen from backing store + windows
+void fb_compose(void) {
+    if (!framebuffer_ptr) return;
+    if (!fb_dirty) return;
+
+    extern QARMA_WIN_HANDLER global_win_handler;
+
+    if (backing_store) {
+        // Copy backing store to framebuffer
+        for (uint32_t y = 0; y < fb_height; y++) {
+            for (uint32_t x = 0; x < fb_width; x++) {
+                uint32_t offset = (y * fb_pitch + x * (fb_bpp / 8)) / 4;
+                framebuffer_ptr[offset] = backing_store[offset];
+            }
+        }
+
+        // Render windows onto the framebuffer
+        for (uint32_t i = 0; i < global_win_handler.count; ++i) {
+            QARMA_WIN_HANDLE *win = global_win_handler.windows[i];
+            if (win && win->active && win->render) {
+                win->render(win);
+            }
+        }
+    } else {
+        // No backing store: render windows directly over existing framebuffer content
+        for (uint32_t i = 0; i < global_win_handler.count; ++i) {
+            QARMA_WIN_HANDLE *win = global_win_handler.windows[i];
+            if (win && win->active && win->render) {
+                win->render(win);
+            }
+        }
+    }
+
+    fb_dirty = false;
+}
+
+void fb_mark_dirty(void) {
+    fb_dirty = true;
+}
+
 // Simple rectangle drawing functions for popup support
 
 extern uint32_t* fb_ptr;
@@ -380,7 +463,7 @@ void fb_draw_rect(int x, int y, int width, int height, uint32_t color) {
         for (int i = 0; i < width; ++i) {
             int px = x + i;
             int py = y + j;
-            if (px >= 0 && px < fb_width && py >= 0 && py < fb_height) {
+            if (IN_BOUNDS(px,fb_width) && IN_BOUNDS(py,fb_height)) {
                 uint32_t offset = (py * fb_pitch + px * (fb_bpp / 8)) / 4;
                 fb_ptr[offset] = color;
             }
@@ -391,29 +474,133 @@ void fb_draw_rect(int x, int y, int width, int height, uint32_t color) {
 void fb_draw_rect_outline(int x, int y, int width, int height, uint32_t color) {
     // Top and bottom
     for (int i = 0; i < width; ++i) {
-        if (x + i >= 0 && x + i < fb_width) {
-            if (y >= 0 && y < fb_height)
+        if (IN_BOUNDS(x + i, (int)fb_width)) {
+            if (IN_BOUNDS(y, (int)fb_height))
                 fb_ptr[(y * fb_pitch + (x + i) * (fb_bpp / 8)) / 4] = color;
-            if (y + height - 1 >= 0 && y + height - 1 < fb_height)
-                fb_ptr[((y + height - 1) * fb_pitch + (x + i) * (fb_bpp / 8)) / 4] = color;
+            if (IN_BOUNDS(y + height - 1, (int)fb_height))
+                fb_ptr[((y + height - 1) * (int)fb_pitch + (x + i) * (fb_bpp / 8)) / 4] = color;
         }
     }
 
     // Left and right
     for (int j = 0; j < height; ++j) {
-        if (y + j >= 0 && y + j < fb_height) {
-            if (x >= 0 && x < fb_width)
+        if (IN_BOUNDS(y + j, fb_height)) {
+            if (IN_BOUNDS(x, fb_width))
                 fb_ptr[((y + j) * fb_pitch + x * (fb_bpp / 8)) / 4] = color;
-            if (x + width - 1 >= 0 && x + width - 1 < fb_width)
+            if (IN_BOUNDS(x + width - 1, fb_width))
                 fb_ptr[((y + j) * fb_pitch + (x + width - 1) * (fb_bpp / 8)) / 4] = color;
         }
     }
 }
 
 uint32_t fb_get_pixel(int x, int y) {
-    if (x >= 0 && x < fb_width && y >= 0 && y < fb_height) {
+    if (IN_BOUNDS(x, fb_width) && IN_BOUNDS(y, fb_height)) {
         uint32_t offset = (y * fb_pitch + x * (fb_bpp / 8)) / 4;
         return fb_ptr[offset];
     }
     return 0; // Default or error color
+}
+
+
+void draw_circle(int cx, int cy, int radius, rgb_color_t color, rgb_color_t bg) {
+    //int r2 = radius * radius;
+    int margin = 1; // how far beyond the radius to sample
+
+    for (int y = -radius - margin; y <= radius + margin; y++) {
+        for (int x = -radius - margin; x <= radius + margin; x++) {
+            int dx = x;
+            int dy = y;
+            float dist = sqrtf(dx * dx + dy * dy);
+            float alpha = 1.0f - fabsf(dist - radius); // fade near edge
+
+            if (alpha > 0.0f && alpha <= 1.0f) {
+                rgb_color_t blended = blend_color(color, bg, alpha);
+                framebuffer_draw_pixel(cx + dx, cy + dy, blended);
+            }
+        }
+    }
+}
+
+rgb_color_t blend_color(rgb_color_t fg, rgb_color_t bg, float alpha) {
+    rgb_color_t out;
+    out.red   = (uint8_t)(fg.red   * alpha + bg.red   * (1.0f - alpha));
+    out.green = (uint8_t)(fg.green * alpha + bg.green * (1.0f - alpha));
+    out.blue  = (uint8_t)(fg.blue  * alpha + bg.blue  * (1.0f - alpha));
+    out.alpha = 0xFF;
+    return out;
+}
+
+void draw_ellipse(int cx, int cy, int rx, int ry, float angle, rgb_color_t color) {
+    int last_px = -9999, last_py = -9999;
+
+    for (float theta = 0.0f; theta < QARMA_TAU; theta += 0.001f) {
+        float x = rx * cosf(theta);
+        float y = ry * sinf(theta);
+
+        float xr = x * cosf(angle) - y * sinf(angle);
+        float yr = x * sinf(angle) + y * cosf(angle);
+
+        int px = (int)(cx + xr + 0.5f);
+        int py = (int)(cy + yr + 0.5f);
+
+        if (px != last_px || py != last_py) {
+            framebuffer_draw_pixel(px, py, color);
+            last_px = px;
+            last_py = py;
+        }
+    }
+}
+
+void draw_atom(int cx, int cy) {
+    // rgb_color_t orbit_color = { .red = 0xFF, .green = 0xFF, .blue = 0xFF, .alpha = 0xFF };
+    // rgb_color_t nucleus_color = { .red = 0xFF, .green = 0xD7, .blue = 0x00, .alpha = 0xFF };
+    // rgb_color_t deep_blue = { .red = 0x00, .green = 0x33, .blue = 0x66 };
+    draw_circle(cx, cy, 10, COLOR_NUCLEUS, COLOR_NUCLEUS); // nucleus
+    draw_ellipse(cx, cy, 60, 30, 0.0f, COLOR_ORBIT);
+    draw_ellipse(cx, cy, 60, 30, 1.0f, COLOR_ORBIT);
+    draw_ellipse(cx, cy, 60, 30, 2.0f, COLOR_ORBIT);
+}
+
+
+
+void draw_line(int x0, int y0, int x1, int y1, rgb_color_t color) {
+    int dx = abs(x1 - x0);
+    int dy = -abs(y1 - y0);
+    int sx = (x0 < x1) ? 1 : -1;
+    int sy = (y0 < y1) ? 1 : -1;
+    int err = dx + dy;
+
+    while (true) {
+        framebuffer_draw_pixel(x0, y0, color);
+        if (x0 == x1 && y0 == y1) break;
+
+        int e2 = 2 * err;
+        if (e2 >= dy) { err += dy; x0 += sx; }
+        if (e2 <= dx) { err += dx; y0 += sy; }
+    }
+}
+
+void draw_scaled_char(int x, int y, char c, int scale, rgb_color_t fg, rgb_color_t bg)
+{
+    for (int i = 0; i < 8; i++) {
+        uint8_t row = vga_font[(uint8_t)c][i];
+        for (int j = 0; j < 8; j++) {
+            rgb_color_t color = (row & (1 << j)) ? fg : bg;
+            for (int sy = 0; sy < scale; sy++) {
+                for (int sx = 0; sx < scale; sx++) {
+                    framebuffer_draw_pixel(x + j * scale + sx, y + i * scale + sy, color);
+                }
+            }
+        }
+    }
+}
+
+void draw_scaled_text_centered(int cx, int y, const char* text, int scale, rgb_color_t fg, rgb_color_t bg) {
+    int len = strlen(text);  // Just the number of characters
+    int total_width = len * 8 * scale;
+    int x0 = cx - total_width / 2;
+
+    for (int i = 0; i < len; i++) {
+        draw_scaled_char(x0 + i * 8 * scale, y, text[i], scale, fg, bg);
+    }
 }

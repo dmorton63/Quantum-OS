@@ -46,6 +46,8 @@ enum vga_color {
 // External kernel state
 extern kernel_state_t g_kernel_state;
 
+int kernel_splash_test();
+
 // Core kernel functions
 int kernel_main(uint32_t multiboot_magic, multiboot_info_t* multiboot_info);
 void kernel_early_init(void);
@@ -62,13 +64,13 @@ void kernel_panic(const char* message);
 void draw_splash(const char *title);
 
 // Memory management
-void vmm_init(void);
-void pmm_init(void);
-void heap_init(void);
-void security_memory_init(void);
-void* heap_alloc(size_t size);
-void vmm_map_page(uint32_t virtual_addr, uint32_t physical_addr, uint32_t flags);
-bool vmm_map_framebuffer(uint32_t fb_physical_addr, uint32_t fb_size);
+// void vmm_init(void);
+// void pmm_init(void);
+// void heap_init(void);
+// void security_memory_init(void);
+// void* heap_alloc(size_t size);
+// void vmm_map_page(uint32_t virtual_addr, uint32_t physical_addr, uint32_t flags);
+// bool vmm_map_framebuffer(uint32_t fb_physical_addr, uint32_t fb_size);
 
 // Page flags
 #define PAGE_PRESENT    0x1

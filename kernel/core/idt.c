@@ -30,6 +30,7 @@ static struct idt_ptr   idt_pointer;
 extern void idt_flush(uint32_t idt_ptr_addr);
 extern void* isr_stubs[32];
 extern void* irq_stubs[16];
+//extern void* irq_stubs[44];
 extern void irqdefault(void);
 
 // ────────────────
@@ -65,6 +66,11 @@ void idt_init(void) {
 
     // Phase 1: Bind CPU exceptions (vectors 0–31)
     for (int i = 0; i < 32; i++) {
+        // if(i == 12) 
+        // {
+        //     idt_set_gate(44, (uint32_t)irq_stubs[i], 0x08, 0x8E);
+        // }
+        // else{
         idt_set_gate(i, (uint32_t)isr_stubs[i], 0x08, 0x8E);
     }
 
@@ -72,7 +78,7 @@ void idt_init(void) {
     for (int i = 0; i < 16; i++) {
         idt_set_gate(32 + i, (uint32_t)irq_stubs[i], 0x08, 0x8E);
     }
-
+    
     // Phase 3: Bind all remaining vectors (48–255) to irqdefault
     for (int i = 48; i < 256; i++) {
         idt_set_gate(i, (uint32_t)irqdefault, 0x08, 0x8E);

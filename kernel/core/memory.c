@@ -8,6 +8,7 @@
 #include "memory.h"
 #include "../config.h"
 
+Block* freeList = NULL;
 
 // Forward declarations for serial debug functions
 extern void serial_debug(const char* msg);
@@ -408,7 +409,7 @@ uint32_t pmm_alloc_page(void) {
     }
     
     GFX_LOG_MIN("PMM: Out of physical memory!");
-    return 0; // No free pages
+    return 0; // No free pagess
 }
 
 void pmm_free_page(uint32_t addr) {

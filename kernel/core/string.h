@@ -63,7 +63,8 @@ char* lltoa(long long value, char* str, int base);
 // Utility functions for kernel strings (basic implementations)
 // Note: These are simplified versions for kernel use
 int sprintf(char* buffer, const char* format, ...);
-int snprintf(char* buffer, size_t size, const char* format, ...);
+int vsprintf(char *buffer, const char *format, va_list args);
+int snprintf(char *buffer, size_t size, const char *format, ...);
 
 // String manipulation utilities
 char* strdup(const char* str);  // Note: requires memory allocator

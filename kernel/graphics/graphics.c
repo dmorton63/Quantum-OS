@@ -164,20 +164,61 @@ void gfx_putchar(char c) {
 
 void gfx_print(const char* str) {
     if (!str) return;
+    g_display.mode = DISPLAY_MODE_SERIAL_CONSOLE;
     // Always route prints into the message box (so they are visible
     // in the UI). Avoid drawing into the desktop framebuffer/VGA to
     // prevent debug output from overwriting UI; if the system is in
     // serial-only mode, emit characters to the serial backend instead.
-    extern void message_box_log(const char* msg);
-    message_box_log(str);
+    // extern void message_box_log(const char* msg);
+    // message_box_log(str);
 
     if (g_display.mode == DISPLAY_MODE_SERIAL_CONSOLE) {
         while (*str) {
             gfx_putchar(*str++);
         }
+    } else {
+            while (*str) {
+                gfx_putchar(*str++);
+            }
+        }
     }
-}
+ void gfx_printf(const char* format, ...) {
+    va_list args;
+    va_start(args, format);
 
+    while (*format) {
+        if (*format == '%' && *(format + 1)) {
+            format++;
+            switch (*format) {
+                case 's': {
+                    const char* str = va_arg(args, const char*);
+                    gfx_print(str);
+                    break;
+                }
+                case 'u': {
+                    uint32_t val = va_arg(args, uint32_t);
+                    gfx_print_decimal(val);
+                    break;
+                }
+                case 'X': {
+                    uint32_t val = va_arg(args, uint32_t);
+                    gfx_print("0x");
+                    gfx_print_hex(val);  // See below
+                    break;
+                }
+                default:
+                    gfx_putchar('%');
+                    gfx_putchar(*format);
+                    break;
+            }
+        } else {
+            gfx_putchar(*format);
+        }
+        format++;
+    }
+
+    va_end(args);
+}   
 void gfx_print_hex(uint32_t value) {
     gfx_print("0x");
     for (int i = 7; i >= 0; i--) {
@@ -213,8 +254,7 @@ void gfx_print_binary(uint32_t value) {
     }
 }
 
-// Simple printf implementation declaration (implemented in shell.c)
-extern void gfx_printf(const char* format, ...);
+
 
 // Cursor and color management
 void gfx_set_cursor(uint32_t x, uint32_t y) {

@@ -558,21 +558,108 @@ bool is_valid_utf8(const char* str) {
     return true;
 }
 
+
+
 // Basic sprintf implementation for kernel use
 int sprintf(char* buffer, const char* format, ...) {
-    // Simple implementation - handles %s, %d, %x, %c
-    char* dest = buffer;
-    const char* src = format;
-    
-    // This is a placeholder - for full implementation, we'd need va_list support
-    // For now, just copy the format string
-    while (*src) {
-        *dest++ = *src++;
-    }
-    *dest = '\0';
-    
-    return dest - buffer;
+    va_list args;
+    va_start(args, format);
+    int written = vsprintf(buffer, format, args);
+    va_end(args);
+    return written;
 }
+
+// static char* itoa(int value, char* str, int base) {
+//     char* ptr = str;
+//     char* ptr1 = str;
+//     char tmp_char;
+//     int tmp_value;
+
+//     if (value == 0) {
+//         *ptr++ = '0';
+//         *ptr = '\0';
+//         return str;
+//     }
+
+//     bool is_negative = false;
+//     if (value < 0 && base == 10) {
+//         is_negative = true;
+//         value = -value;
+//     }
+
+//     while (value != 0) {
+//         tmp_value = value % base;
+//         *ptr++ = (tmp_value < 10) ? tmp_value + '0' : tmp_value - 10 + 'a';
+//         value /= base;
+//     }
+
+//     if (is_negative) *ptr++ = '-';
+//     *ptr = '\0';
+
+//     // Reverse the string
+//     ptr--;
+//     while (ptr1 < ptr) {
+//         tmp_char = *ptr;
+//         *ptr-- = *ptr1;
+//         *ptr1++ = tmp_char;
+//     }
+
+//     return str;
+// }
+
+int vsprintf(char* buffer, const char* format, va_list args) {
+    char* buf_ptr = buffer;
+    const char* fmt_ptr = format;
+    char temp[32];
+
+    while (*fmt_ptr) {
+        if (*fmt_ptr == '%') {
+            fmt_ptr++;
+            switch (*fmt_ptr) {
+                case 'd': {
+                    int val = va_arg(args, int);
+                    itoa(val, temp, 10);
+                    for (char* t = temp; *t; ++t) *buf_ptr++ = *t;
+                    break;
+                }
+                case '0': {
+                    fmt_ptr++;
+                    int pad = *fmt_ptr - '0'; // assumes single digit like '4'
+                    fmt_ptr++; // skip past digit
+                    if (*fmt_ptr == 'x') {
+                        int val = va_arg(args, int);
+                        itoa(val, temp, 16);
+                        int len = strlen(temp);
+                        for (int i = 0; i < pad - len; ++i) *buf_ptr++ = '0';
+                        for (char* t = temp; *t; ++t) *buf_ptr++ = *t;
+                    }
+                    break;
+                }
+                case 's': {
+                    char* str = va_arg(args, char*);
+                    while (*str) *buf_ptr++ = *str++;
+                    break;
+                }
+                case 'c': {
+                    char c = (char)va_arg(args, int);
+                    *buf_ptr++ = c;
+                    break;
+                }
+                default:
+                    *buf_ptr++ = '%';
+                    *buf_ptr++ = *fmt_ptr;
+                    break;
+            }
+        } else {
+            *buf_ptr++ = *fmt_ptr;
+        }
+        fmt_ptr++;
+    }
+
+    *buf_ptr = '\0';
+    return buf_ptr - buffer;
+}
+
 
 // Basic snprintf implementation for kernel use  
 int snprintf(char* buffer, size_t size, const char* format, ...) {

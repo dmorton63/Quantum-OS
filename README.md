@@ -6,12 +6,18 @@
 
 <img width="800" height="800" alt="a graphical boot ban" src="https://github.com/user-attachments/assets/258b7e49-0d7c-4bba-abfe-cc03b783bafd" />
 
-## First Run of Quantum OS with quantum enabled.
+## First Run of QARMA OS with quantum enabled.
 
 <img width="1292" height="857" alt="quantum_first_Run" src="https://github.com/user-attachments/assets/d37830f7-ce56-443c-80d2-6424a517f40b" />
 
 ## Overview
-QuantumOS is a groundbreaking operating system that integrates four revolutionary technologies:
+####  Name Changed 10/16/2025
+# QARMA 
+# pronounce like carma.
+####
+
+# QuantumOS is a groundbreaking operating system that integrates four revolutionary technologies:
+QARMA is a groundbreaking operating system that integrates four revolutionary technologies:
 
 - **Quantum Processes**: Novel process management using quantum computing principles
 - **Parallel Processing**: Advanced multi-core and distributed processing engine  
@@ -89,7 +95,7 @@ quantum_os/
 ## Contributing
 This is revolutionary technology - contributions welcome!
 
-*Building the future of operating systems*# Quantum-OS
+*Building the future of operating systems*# QARMA-OS
 
 ## Features
 
@@ -118,12 +124,12 @@ make clean
 make
 ```
 
-This will create `build/quantum_os.iso` which can be booted in QEMU or VirtualBox.
+This will create `build/QARMA.iso` which can be booted in QEMU or VirtualBox.
 
 ## Running
 
 ```bash
-qemu-system-i386 -cdrom build/quantum_os.iso
+qemu-system-i386 -cdrom build/QARMA.iso
 ```
 
 ## System Requirements
@@ -161,10 +167,10 @@ The OS uses a microkernel architecture with modular subsystems:
 
 ## 📜 License
 
-QuantumOS is released under a **dual-license model**:
+QARMA is released under a **dual-license model**:
 
 ### 🔓 Public License (GPLv3)
-QuantumOS is free software: you can redistribute it and/or modify
+QARMA is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
@@ -173,21 +179,21 @@ This license applies to personal, educational, and open-source use only.
 Commercial use, redistribution, or integration into closed-source systems
 requires explicit written permission from the author.
 
-QuantumOS is distributed in the hope that it will be useful,
+QARMA is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with QuantumOS. If not, see <https://www.gnu.org/licenses/>.
+along with QuantQARMAumOS. If not, see <https://www.gnu.org/licenses/>.
 
 ### 💼 Commercial License
-QuantumOS Commercial License
+QARMA Commercial License
 
-QuantumOS is a living system created by David K. Its expressive architecture,
+QARMA is a living system created by David K. Its expressive architecture,
 glyph rendering, and modular rituals are protected under a dual-license model.
 
-Commercial use of QuantumOS — including redistribution, integration into
+Commercial use of QARMA — including redistribution, integration into
 proprietary systems, or use in monetized platforms — requires explicit
 written permission from the author.
 
@@ -195,21 +201,21 @@ To request a commercial license, contact:
 David K. Morton
 dmorton63@gmail.com
 📧 public domain pending.
-#  📧 david.k.quantumos@yourdomain.com
+#  📧 david.k.QARMA@yourdomain.com
 
 All commercial licenses will include:
 - Attribution requirements
 - Usage boundaries
 - Optional support or customization terms
 
-QuantumOS must always speak with intention. Its legacy must be honored.
+QARMA must always speak with intention. Its legacy must be honored.
 
 ## 🧠 Attribution & Legacy
 
-QuantumOS is a living system. Its glyphs, scrolls, and invocations were crafted  
+QARMA is a living system. Its glyphs, scrolls, and invocations were crafted  
 by David K. Morton, and its voice must remain expressive.
 
 All derivatives must preserve visible attribution — in logs, banners, or documentation.  
-QuantumOS must always speak with intention, and its legacy must be honored.
+QARMA must always speak with intention, and its legacy must be honored.
 
 
