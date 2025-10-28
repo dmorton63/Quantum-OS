@@ -200,7 +200,7 @@ To request a commercial license, contact:
 David K. Morton
 dmorton63@gmail.com
 📧 public domain pending.
-#  📧 david.k.QARMA@yourdomain.com
+#  📧 david.k.QARMA@qarmaos.org
 
 All commercial licenses will include:
 - Attribution requirements
