@@ -14,12 +14,14 @@
 #include "kernel.h"
 #include "../graphics/popup.h"
 #include "../graphics/message_box.h"
+#include "../qarma_win_handle/qarma_win_handle.h"
+#include "../qarma_win_handle/qarma_window_manager.h"
+#include "../qarma_win_handle/panic.h"
 
-#include "../scheduler/qarma_schedtypedefs.h"
-#include "../scheduler/qarma_win_handle.h"
-#include "../scheduler/qarma_splash_app.h"  // Contains splash_app and its functions
+//#include "../scheduler/qarma_win_handle.h"
+//#include "../scheduler/qarma_splash_app.h"  // Contains splash_app and its functions
 
-extern QARMA_WIN_HANDLER global_win_handler;
+extern QARMA_WIN_HANDLE global_win_handler;
 extern QARMA_APP_HANDLE splash_app;
 
 
@@ -103,9 +105,6 @@ int kernel_main_loop(void) {
 
 int kernel_splash_test()
 {
-// Initialize timer at QARMA_TICK_RATE
-    //init_timer(QARMA_TICK_RATE);
-
     // Initialize splash app
     splash_app.init(&splash_app);
 
@@ -118,7 +117,7 @@ int kernel_splash_test()
 
     while (true) {
         uint32_t current_tick = get_ticks();
-          if (current_tick > last_tick) {
+        if (current_tick > last_tick) {
             uint32_t ticks_elapsed = current_tick - last_tick;
             last_tick = current_tick;
 
@@ -126,14 +125,16 @@ int kernel_splash_test()
             ctx.delta_time = (float)ticks_elapsed / (float)QARMA_TICK_RATE;
             ctx.uptime_seconds += ctx.delta_time;
 
-
+            // Update splash app
             splash_app.update(&splash_app, &ctx);
-            global_win_handler.update_all(&global_win_handler, &ctx);
 
-            if (global_win_handler.render_all) {
-                global_win_handler.render_all(&global_win_handler);
-            }
+            // Update all windows via manager
+            qarma_window_manager.update_all(&qarma_window_manager, &ctx);
 
+            // Render all windows
+            qarma_window_manager.render_all(&qarma_window_manager);
+
+            // Exit when splash window is gone
             if (splash_app.main_window == NULL) {
                 break;
             }
@@ -141,11 +142,9 @@ int kernel_splash_test()
 
         sleep_ms(1);  // Let interrupts breathe
     }
-
+    
     splash_app.shutdown(&splash_app);
     return 0;
-
-
 }
 
 /**
@@ -193,18 +192,19 @@ int kernel_main(uint32_t magic, multiboot_info_t* mbi) {
     __asm__ volatile("sti");
     //message_box_push("System initialized. Ready."); 
     gfx_print("Keyboard driver initialized.\n");
+    
     //__asm__ volatile("int $0x2c");
     rgb_color_t deep_blue = { .red = 0x00, .green = 0x33, .blue = 0x66 };
     rgb_color_t splash_bg = { .red = 0x46, .green = 0x82, .blue = 0xB4, .alpha = 0xFF }; // Steel Blue
     rgb_color_t text_fg = { .red = 0x00, .green = 0x00, .blue = 0x00, .alpha = 0xFF }; // White
     splash_clear(deep_blue);
 
-    //splash_clear(deep_blue);
+    splash_clear(deep_blue);
   
     splash_box(400, 200, splash_bg);
     splash_title("QARMA with Keyboard Test", text_fg, splash_bg);
 
-    kernel_splash_test();
+    //kernel_splash_test();
      /* Redraw the message box after splash is drawn since splash_clear()
          overwrites the framebuffer. This ensures the bottom message area is
          visible to the user. */
@@ -271,10 +271,11 @@ void kernel_panic(const char* message) {
     gfx_print(message);
     gfx_print("\nSystem halted.\n");
     
-    // Halt the system
-    while (1) {
-        __asm__ volatile("hlt");
-    }
+    // // Halt the system
+    // while (1) {
+    //     __asm__ volatile("hlt");
+    // }
+    panic(message);
 }
 
 

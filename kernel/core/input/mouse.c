@@ -6,8 +6,8 @@
 static uint8_t packet[3];
 static uint8_t packet_index = 0;
 static mouse_state_t mouse_state = {0};
-int fb_width = 800;
-int fb_height = 600;
+// extern uint32_t fb_width;
+// extern uint32_t fb_height;
 
 void mouse_handler() {
     packet[packet_index++] = inb(0x60);

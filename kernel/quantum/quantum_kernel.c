@@ -11,6 +11,8 @@
 #include "../config.h"
 #include "../core/clock_overlay.h"
 #include "../core/memory.h"
+#include "../qarma_win_handle/qarma_window_manager.h"
+
 
 // Global quantum system state
 static quantum_process_t* g_quantum_processes = NULL;
@@ -29,6 +31,7 @@ static uint32_t g_qubit_count = 0;
 
 void quantum_kernel_main(uint32_t magic, multiboot_info_t* mbi) {
     GFX_LOG_MIN("QuantumOS main entry invoked.\n");
+    gfx_print("Starting QuantumOS Quantum Kernel...\n");
     kernel_main(magic, mbi);
     quantum_kernel_init();         // Initialize quantum core
     quantum_drivers_init();        // Load quantum hardware
@@ -36,6 +39,7 @@ void quantum_kernel_main(uint32_t magic, multiboot_info_t* mbi) {
 
     // Optionally spawn initial quantum process
     quantum_process_create("init", 0);
+    qarma_window_manager_init();
     clock_overlay_init();          // Initialize clock overlay
     reset_clock();               // Reset clock to 00:00:00
     // Enter main loop

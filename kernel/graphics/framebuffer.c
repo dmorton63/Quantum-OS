@@ -10,7 +10,8 @@
 #include "../config.h"
 #include "../core/math.h"
 #include "../core/memory.h"
-#include "../scheduler/qarma_win_handle.h"
+#include "../qarma_win_handle/qarma_win_handle.h"
+#include "../qarma_win_handle/qarma_window_manager.h"
 
 // Debug functions now handled by config.h macros
 
@@ -31,10 +32,10 @@ uint32_t* fb_ptr = NULL;
 // Backing store for composition
 static uint32_t* backing_store = NULL;
 static bool fb_dirty = false;
-static uint32_t fb_width = 0;
-static uint32_t fb_height = 0;
-static uint32_t fb_pitch = 0;
-static uint32_t fb_bpp = 0;
+uint32_t fb_width = 0;
+uint32_t fb_height = 0;
+uint32_t fb_pitch = 0;
+uint32_t fb_bpp = 0;
 static uint32_t cursor_x = 0;
 static uint32_t cursor_y = 0;
 
@@ -49,25 +50,25 @@ extern void draw_bitmap_char(uint32_t fb_x, uint32_t fb_y, char c, rgb_color_t f
 
 void framebuffer_init(void) {
     display_info_t* info = graphics_get_display_info();
-    
+
     // Get framebuffer info from multiboot (stored during init)
     // The graphics system should have preserved the real framebuffer info
     if (info->framebuffer != NULL) {
     framebuffer_ptr = info->framebuffer;
     // Also set fb_ptr used by fb_* helpers
     fb_ptr = (uint32_t*)framebuffer_ptr;
-        
+
         // Store the PIXEL dimensions from multiboot detection
         // Note: At this point info->width/height are still in PIXELS from multiboot
         uint32_t pixel_width = info->width;
         uint32_t pixel_height = info->height;
-        
+
         // Use actual framebuffer parameters from multiboot
         fb_width = pixel_width;
-        fb_height = pixel_height;  
+        fb_height = pixel_height;
         fb_bpp = info->bpp;
         fb_pitch = info->pitch;
-        
+
         // Boot log framebuffer detection
         BOOT_LOG("Framebuffer detected and configured\n");
         BOOT_LOG_HEX("FB Address: ", (uint32_t)framebuffer_ptr);
@@ -79,27 +80,27 @@ void framebuffer_init(void) {
     } else {
         // No framebuffer available
         framebuffer_ptr = NULL;
-        
+
         SERIAL_LOG_MIN("FB_INIT: No framebuffer available!\n");
         return;
     }
-    
+
     cursor_x = 0;
     cursor_y = 0;
-    
+
     // Update display info for TEXT operations (characters, not pixels)
     info->width = fb_width / FONT_WIDTH;    // Characters per line
     info->height = fb_height / FONT_HEIGHT; // Lines per screen
     info->pitch = fb_pitch;
     info->bpp = fb_bpp;
-    
+
     // Debug: Show text area dimensions
     BOOT_LOG_DEC("Text cols: ", info->width);
     BOOT_LOG_DEC("Text rows: ", info->height);
     // Keep framebuffer pointer for graphics operations
     info->cursor_x = 0;
     info->cursor_y = 0;
-    
+
     // Allocate backing store for composition
     size_t pixels = fb_width * fb_height;
     backing_store = (uint32_t*)malloc(pixels * sizeof(uint32_t));
@@ -112,7 +113,7 @@ void framebuffer_init(void) {
             }
         }
     }
-    
+
     // DEBUG: Force draw some test characters directly to verify framebuffer works
     framebuffer_draw_char(0, 0, 'T', (rgb_color_t){255,255,255,255}, (rgb_color_t){0,0,0,255});
     framebuffer_draw_char(8, 0, 'E', (rgb_color_t){255,255,255,255}, (rgb_color_t){0,0,0,255});
@@ -198,12 +199,12 @@ void framebuffer_putchar(char c) {
 
 void framebuffer_clear(void) {
     display_info_t* info = graphics_get_display_info();
-    
+
     if (!framebuffer_ptr) return;
-    
+
     rgb_color_t bg = color_to_rgb(info->bg_color);
     uint32_t pixel = rgb_to_pixel(bg, fb_bpp, 16, 8, 0); // R=16, G=8, B=0 for RGBA
-    
+
     // Clear entire framebuffer
     for (uint32_t y = 0; y < fb_height; y++) {
         for (uint32_t x = 0; x < fb_width; x++) {
@@ -211,11 +212,91 @@ void framebuffer_clear(void) {
             framebuffer_ptr[offset] = pixel;
         }
     }
-    
+
     cursor_x = 0;
     cursor_y = 0;
     info->cursor_x = 0;
     info->cursor_y = 0;
+}
+
+void fb_draw_rect_to_buffer(uint32_t* buffer, QARMA_DIMENSION size, int x, int y, QARMA_DIMENSION buffSize, QARMA_COLOR color) {
+    for (int j = 0; j < buffSize.height; ++j) {
+        for (int i = 0; i < buffSize.width; ++i) {
+            int px = x + i;
+            int py = y + j;
+
+            if (IN_BOUNDS(px, size.width) && IN_BOUNDS(py, size.height)) {
+                uint32_t offset = py * size.width + px;
+
+                // Optional: add alpha blending here if needed
+                buffer[offset] = color.r | (color.g << 8) | (color.b << 16) | (color.a << 24);
+            }
+        }
+    }
+}
+
+void framebuffer_blit_window(QARMA_WIN_HANDLE* win) {
+    for (int y = 0; y < win->size.height; ++y) {
+        for (int x = 0; x < win->size.width; ++x) {
+            int dst_x = win->x + x;
+            int dst_y = win->y + y;
+            if (IN_BOUNDS(dst_x, fb_width) && IN_BOUNDS(dst_y, fb_height)) {
+                uint32_t src = win->pixel_buffer[y * win->size.width + x];
+                framebuffer_blend_pixel(dst_x, dst_y, src);
+            }
+        }
+    }
+}
+
+
+void fb_compose_all(void) {
+    if (!framebuffer_ptr || !backing_store) return;
+
+    // Step 1: Copy backing store to framebuffer
+    memcpy(framebuffer_ptr, backing_store, fb_height * fb_pitch);
+
+    // Step 2: Composite each window
+    for (uint32_t i = 0; i < qarma_window_manager.count; ++i) {
+        QARMA_WIN_HANDLE* win = qarma_window_manager.windows[i];
+        if (!win || !(win->flags & QARMA_FLAG_VISIBLE)) continue;
+
+        if (win->vtable && win->vtable->render) {
+            win->vtable->render(win);  // Draw into win->pixel_buffer
+        }
+
+        framebuffer_blit_window(win);  // Composite onto framebuffer
+    }
+
+    fb_dirty = false;
+}
+
+void framebuffer_blend_pixel(int x, int y, uint32_t src) {
+    if (!IN_BOUNDS(x, fb_width) || !IN_BOUNDS(y, fb_height)) return;
+
+    uint32_t pitch_pixels = fb_pitch / 4;
+    uint32_t offset = y * pitch_pixels + x;
+
+    uint32_t dst = framebuffer_ptr[offset];
+
+    // Extract RGBA from source
+    uint8_t src_r = src & 0xFF;
+    uint8_t src_g = (src >> 8) & 0xFF;
+    uint8_t src_b = (src >> 16) & 0xFF;
+    uint8_t src_a = (src >> 24) & 0xFF;
+
+    // Extract RGB from destination
+    uint8_t dst_r = dst & 0xFF;
+    uint8_t dst_g = (dst >> 8) & 0xFF;
+    uint8_t dst_b = (dst >> 16) & 0xFF;
+
+    float alpha = src_a / 255.0f;
+
+    // Blend
+    uint8_t out_r = (uint8_t)(src_r * alpha + dst_r * (1 - alpha));
+    uint8_t out_g = (uint8_t)(src_g * alpha + dst_g * (1 - alpha));
+    uint8_t out_b = (uint8_t)(src_b * alpha + dst_b * (1 - alpha));
+
+    framebuffer_ptr[offset] = out_r | (out_g << 8) | (out_b << 16) | (0xFF << 24);
 }
 
 void splash_clear(rgb_color_t bg) {
@@ -260,7 +341,8 @@ void splash_title(const char *text, rgb_color_t fg, rgb_color_t bg) {
 }
 
 
-void framebuffer_set_cursor(uint32_t x, uint32_t y) {
+void framebuffer_set_cursor(uint32_t x, uint32_t y)
+{
     display_info_t* info = graphics_get_display_info();
 
     if (x < info->width && y < info->height) {
@@ -273,12 +355,12 @@ void framebuffer_set_cursor(uint32_t x, uint32_t y) {
 
 void framebuffer_scroll(void) {
     display_info_t* info = graphics_get_display_info();
-    
+
     if (!framebuffer_ptr) return;
-    
+
     uint32_t line_height = FONT_HEIGHT;
     (void)fb_bpp; // Suppress unused warning
-    
+
     // Move all lines up by one character line
     for (uint32_t y = 0; y < fb_height - line_height; y++) {
         for (uint32_t x = 0; x < fb_width; x++) {
@@ -287,11 +369,11 @@ void framebuffer_scroll(void) {
             framebuffer_ptr[dst_offset] = framebuffer_ptr[src_offset];
         }
     }
-    
+
     // Clear the last line
     rgb_color_t bg = color_to_rgb(info->bg_color);
     uint32_t pixel = rgb_to_pixel(bg, fb_bpp, 16, 8, 0);
-    
+
     for (uint32_t y = fb_height - line_height; y < fb_height; y++) {
         for (uint32_t x = 0; x < fb_width; x++) {
             uint32_t offset = (y * fb_pitch) / 4 + x;
@@ -377,7 +459,7 @@ void framebuffer_set_mode(uint32_t width, uint32_t height, uint32_t bpp) {
     fb_height = height;
     fb_bpp = bpp;
     fb_pitch = width * (bpp / 8);
-    
+
     display_info_t* info = graphics_get_display_info();
     info->width = width / FONT_WIDTH;
     info->height = height / FONT_HEIGHT;
@@ -391,7 +473,7 @@ void framebuffer_test(void) {
         SERIAL_LOG("FB_TEST: No framebuffer available!\n");
         return;
     }
-    
+
 
     // Draw some test pixels to verify framebuffer works
     rgb_color_t red = {0xFF, 0x00, 0x00, 0xFF};
@@ -401,7 +483,7 @@ void framebuffer_test(void) {
         for (uint32_t x = 0; x < 100; x++) {
             framebuffer_draw_pixel(x, y, red); // Magenta
         }
-    }    
+    }
         // Draw a few colored pixels in top-left corner
     framebuffer_draw_pixel(0, 0, red);
     framebuffer_draw_pixel(1, 0, green);
@@ -416,7 +498,8 @@ void fb_compose(void) {
     if (!framebuffer_ptr) return;
     if (!fb_dirty) return;
 
-    extern QARMA_WIN_HANDLER global_win_handler;
+    
+extern QARMA_WINDOW_MANAGER qarma_window_manager;
 
     if (backing_store) {
         // Copy backing store to framebuffer
@@ -428,21 +511,16 @@ void fb_compose(void) {
         }
 
         // Render windows onto the framebuffer
-        for (uint32_t i = 0; i < global_win_handler.count; ++i) {
-            QARMA_WIN_HANDLE *win = global_win_handler.windows[i];
-            if (win && win->active && win->render) {
-                win->render(win);
+        for (uint32_t i = 0; i < qarma_window_manager.count; ++i) {
+            QARMA_WIN_HANDLE *win = qarma_window_manager.windows[i];
+            if (win && (win->flags & QARMA_FLAG_VISIBLE) && win->vtable && win->vtable->render) {
+                if (win->vtable->render) {
+                    win->vtable->render(win);  // render into win->pixel_buffer
+                }
+                framebuffer_blit_window(win);  // composite onto framebuffer
             }
         }
-    } else {
-        // No backing store: render windows directly over existing framebuffer content
-        for (uint32_t i = 0; i < global_win_handler.count; ++i) {
-            QARMA_WIN_HANDLE *win = global_win_handler.windows[i];
-            if (win && win->active && win->render) {
-                win->render(win);
-            }
-        }
-    }
+    }   
 
     fb_dirty = false;
 }
@@ -453,10 +531,8 @@ void fb_mark_dirty(void) {
 
 // Simple rectangle drawing functions for popup support
 
-extern uint32_t* fb_ptr;
-// extern int fb_width;
-// extern int fb_height;
-// extern int fb_pitch;
+// static int alpha_count = 0;
+// static int solid_count = 0;
 
 void fb_draw_rect(int x, int y, int width, int height, uint32_t color) {
     for (int j = 0; j < height; ++j) {
@@ -466,6 +542,36 @@ void fb_draw_rect(int x, int y, int width, int height, uint32_t color) {
             if (IN_BOUNDS(px,fb_width) && IN_BOUNDS(py,fb_height)) {
                 uint32_t offset = (py * fb_pitch + px * (fb_bpp / 8)) / 4;
                 fb_ptr[offset] = color;
+            }
+        }
+    }
+}
+
+
+void fb_draw_rect_alpha(int x, int y, int width, int height, QARMA_COLOR color) {
+    uint32_t pitch_pixels = fb_pitch / 4;
+
+    for (int j = 0; j < height; ++j) {
+        for (int i = 0; i < width; ++i) {
+            int px = x + i;
+            int py = y + j;
+
+            if (IN_BOUNDS(px, fb_width) && IN_BOUNDS(py, fb_height)) {
+                uint32_t offset = py * pitch_pixels + px;
+                uint32_t dst = fb_ptr[offset];
+
+                // Extract destination RGB
+                uint8_t dst_r = dst & 0xFF;
+                uint8_t dst_g = (dst >> 8) & 0xFF;
+                uint8_t dst_b = (dst >> 16) & 0xFF;
+
+                // Blend
+                float alpha = color.a / 255.0f;
+                uint8_t out_r = (uint8_t)(color.r * alpha + dst_r * (1 - alpha));
+                uint8_t out_g = (uint8_t)(color.g * alpha + dst_g * (1 - alpha));
+                uint8_t out_b = (uint8_t)(color.b * alpha + dst_b * (1 - alpha));
+
+                fb_ptr[offset] = out_r | (out_g << 8) | (out_b << 16) | (0xFF << 24);
             }
         }
     }
