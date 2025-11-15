@@ -4,6 +4,7 @@
 #include "../graphics/graphics.h"
 //#include "../config.h"
 #include "../core/memory.h"
+#include "../core/memory/heap.h"
 #include "../core/text_functions/text.h"
 #include "../core/boot_log.h" // defines BOOT_LOG_LINE_LENGTH and kernel stdarg
 #include <string.h>

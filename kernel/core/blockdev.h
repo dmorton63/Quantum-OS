@@ -9,6 +9,7 @@ typedef enum {
     BLOCKDEV_TYPE_ATA,
     BLOCKDEV_TYPE_NVME,
     BLOCKDEV_TYPE_USB,
+    BLOCKDEV_TYPE_OPTICAL,
     // ...
 } blockdev_type_t;
 

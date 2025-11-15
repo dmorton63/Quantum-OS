@@ -9,6 +9,7 @@
 #include "../core/kernel.h"
 #include "../graphics/graphics.h"
 #include "../core/memory.h"
+#include "../core/memory/heap.h"
 
 // Global parallel engine state
 static cpu_core_t* g_cpu_cores = NULL;
@@ -28,14 +29,14 @@ static uint32_t g_next_task_id = 1;
 void parallel_engine_init(void) {
     gfx_print("Initializing parallel processing engine...\n");
     
-    // Detect CPU topology
+    // Reset statistics first
+    memset(&g_engine_stats, 0, sizeof(parallel_engine_stats_t));
+    
+    // Detect CPU topology (sets total_cores, active_cores, numa_nodes)
     detect_cpu_topology();
     
     // Initialize per-core schedulers
     parallel_scheduler_init();
-    
-    // Reset statistics
-    memset(&g_engine_stats, 0, sizeof(parallel_engine_stats_t));
     
     gfx_print("Parallel processing engine initialized.\n");
 }
@@ -81,15 +82,62 @@ void parallel_scheduler_init(void) {
 }
 
 /**
- * Detect CPU topology
+ * Detect CPU topology using CPUID
  */
 void detect_cpu_topology(void) {
-    // Simulate CPU topology detection
-    // In real implementation, would read from CPUID, ACPI, etc.
+    uint32_t eax, ebx, ecx, edx;
+    uint32_t logical_cores = 1;
     
-    g_engine_stats.total_cores = 8;  // Simulate 8-core system
-    g_engine_stats.active_cores = g_engine_stats.total_cores;
-    g_engine_stats.numa_nodes = 2;   // Simulate 2 NUMA nodes
+    // Get max basic CPUID function
+    __asm__ volatile("cpuid"
+                     : "=a"(eax), "=b"(ebx), "=c"(ecx), "=d"(edx)
+                     : "a"(0)
+                     : );
+    
+    uint32_t max_basic = eax;
+    
+    if (max_basic >= 1) {
+        // Get logical processor count (CPUID.1.EBX[23:16])
+        __asm__ volatile("cpuid"
+                         : "=a"(eax), "=b"(ebx), "=c"(ecx), "=d"(edx)
+                         : "a"(1)
+                         : );
+        
+        logical_cores = (ebx >> 16) & 0xFF;
+        
+        gfx_print("CPUID.1: EBX=");
+        gfx_print_hex(ebx);
+        gfx_print(" logical_cores=");
+        gfx_print_hex(logical_cores);
+        gfx_print("\n");
+        
+        // Sanity check - limit to reasonable max to avoid issues
+        if (logical_cores == 0) {
+            gfx_print("Invalid core count (0), defaulting to 8\n");
+            logical_cores = 8;
+        } else if (logical_cores > 64) {
+            gfx_print("Core count too high (");
+            gfx_print_hex(logical_cores);
+            gfx_print("), capping at 16 for stability\n");
+            logical_cores = 16;  // Cap at 16 to avoid memory/timing issues
+        }
+    } else {
+        gfx_print("CPUID not supported properly, defaulting to 8 cores\n");
+        logical_cores = 8;
+    }
+    
+    g_engine_stats.total_cores = logical_cores;
+    g_engine_stats.active_cores = logical_cores;
+    
+    // Estimate NUMA nodes (1 node per 8 cores)
+    g_engine_stats.numa_nodes = (logical_cores + 7) / 8;
+    if (g_engine_stats.numa_nodes == 0) g_engine_stats.numa_nodes = 1;
+    
+    gfx_print("Detected ");
+    gfx_print_hex(logical_cores);
+    gfx_print(" logical cores, ");
+    gfx_print_hex(g_engine_stats.numa_nodes);
+    gfx_print(" NUMA nodes\n");
     
     // Create CPU core structures
     for (uint32_t i = 0; i < g_engine_stats.total_cores; i++) {
@@ -293,6 +341,20 @@ uint32_t calculate_core_load(uint32_t core_id) {
 }
 
 /**
+ * Get CPU core count
+ */
+uint32_t get_cpu_core_count(void) {
+    return g_engine_stats.total_cores;
+}
+
+/**
+ * Get NUMA node count
+ */
+uint32_t get_numa_node_count(void) {
+    return g_engine_stats.numa_nodes;
+}
+
+/**
  * Get NUMA node for a core
  */
 uint32_t get_numa_node_for_core(uint32_t core_id) {
@@ -433,4 +495,59 @@ uint32_t atomic_load(volatile uint32_t* ptr) {
 
 void atomic_store(volatile uint32_t* ptr, uint32_t value) {
     *ptr = value;
+}
+
+/**
+ * Core manager integration - register core allocation
+ */
+void parallel_register_core_allocation(uint32_t core_id, uint32_t subsystem_id) {
+    (void)subsystem_id; // Track subsystem ownership if needed
+    
+    if (core_id >= MAX_CORES) return;
+    
+    // Mark core as actively managed
+    cpu_core_t* core = g_cpu_cores;
+    while (core) {
+        if (core->core_id == core_id) {
+            // Core is now allocated to a specific subsystem
+            core->online = true;
+            break;
+        }
+        core = core->next;
+    }
+}
+
+/**
+ * Core manager integration - unregister core allocation
+ */
+void parallel_unregister_core_allocation(uint32_t core_id, uint32_t subsystem_id) {
+    (void)subsystem_id; // Track subsystem ownership if needed
+    (void)core_id;
+    
+    // Core is being released back to the pool
+    // Keep core online for future allocations
+}
+
+/**
+ * Update task affinity to specific core
+ */
+void parallel_update_core_affinity(parallel_task_t* task, uint32_t core_id) {
+    if (!task || core_id >= MAX_CORES) return;
+    
+    task->assigned_core = core_id;
+    task->preferred_numa_node = get_numa_node_for_core(core_id);
+}
+
+/**
+ * Check if core is busy
+ */
+bool parallel_is_core_busy(uint32_t core_id) {
+    if (core_id >= MAX_CORES) return true;
+    
+    core_scheduler_t* scheduler = &g_core_schedulers[core_id];
+    if (!scheduler) return false;
+    
+    // Core is busy if it has a current task or pending work
+    return (scheduler->current_task != NULL) || 
+           (atomic_load(&scheduler->local_queue.head) != atomic_load(&scheduler->local_queue.tail));
 }

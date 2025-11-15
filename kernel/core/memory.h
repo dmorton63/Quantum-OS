@@ -1,7 +1,7 @@
 /**
  * QuantumOS - Memory Management Header
  * 
- * Function declarations for memory management subsystems
+ * Unified declarations for memory subsystems: PMM, VMM, Heap, and utilities.
  */
 
 #ifndef MEMORY_H
@@ -9,47 +9,43 @@
 
 #include "../kernel_types.h"
 
+//
+// ─── Memory Constants ───────────────────────────────────────────────────────────
+//
+
+#define PAGE_SIZE 0x1000  // 4KB pages
+#define BLOCK_SIZE sizeof(Block)
+#define ALIGNED(x) __attribute__((aligned(x)))
+
+//
+// ─── Heap Block Structure (Legacy malloc/free) ──────────────────────────────────
+//
+
 typedef struct Block {
     size_t size;
     struct Block* next;
     int free;
 } Block;
 
-#define BLOCK_SIZE sizeof(Block)
-
-
-
-// Page size and alignment
-#define PAGE_SIZE 0x1000  // 4KB pages
-#define ALIGNED(x) __attribute__((aligned(x)))
+//
+//
+// ─── Legacy malloc/free (optional) ──────────────────────────────────────────────
+//
+void memory_init(void);
 void* malloc(size_t size);
-void *sbrk(int increment);
-void free(void *ptr);
+void* sbrk(int increment);
+void  free(void* ptr);
 
-// Physical Memory Manager (PMM)
-void pmm_init(void);
-void pmm_mark_region_free(uint32_t start_addr, uint32_t length);
-void pmm_mark_region_used(uint32_t start_addr, uint32_t length);
-uint32_t pmm_alloc_page(void);
-void pmm_free_page(uint32_t addr);
-void pmm_print_stats(void);
+//
+// ─── Memory Utilities ───────────────────────────────────────────────────────────
+//
 
-// Virtual Memory Manager (VMM)
-void vmm_init(void);
-void vmm_map_page(uint32_t virtual_addr, uint32_t physical_addr, uint32_t flags);
-uint32_t vmm_alloc_region(uint32_t size);
-void vmm_free_region(uint32_t virtual_addr, uint32_t size);
-bool vmm_map_framebuffer(uint32_t fb_physical_addr, uint32_t fb_size);
-
-// Heap Management
-void heap_init(void);
-void* heap_alloc(size_t size);
-void heap_free(void* ptr);
-
-// Memory utility functions
 void kernel_delay(uint32_t count);
 
-// String functions (implemented in string.c)
+//
+// ─── String Functions (implemented in string.c) ─────────────────────────────────
+//
+
 void* memset(void* ptr, int value, size_t size);
 void* memcpy(void* dest, const void* src, size_t size);
 size_t strlen(const char* str);

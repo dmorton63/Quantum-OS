@@ -42,6 +42,10 @@ typedef enum {
     CMD_ERROR_GENERAL
 } command_result_t;
 
+//void cmd_mouse(int argc, char** argv);
+
+//void show_mouse_info(void);
+
 // Function prototypes
 bool command_init(void);
 // static bool get_volume_bpb_for_command(uint8_t vol_index, const BPB **bpb_out, const char *cmd_name);
@@ -81,6 +85,7 @@ void cmd_reboot(int argc, char** argv);
 void cmd_version(int argc, char** argv);
 void cmd_clear(int argc, char** argv);
 void cmd_exit(int argc, char** argv);
+
 int atoi(const char* str);
 // Utility functions
 const char* get_mode_string(shell_mode_t mode);

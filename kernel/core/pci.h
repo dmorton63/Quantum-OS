@@ -17,7 +17,7 @@ static inline uint32_t pci_read_config_dword(uint8_t bus, uint8_t slot, uint8_t 
     uint32_t addr = pci_config_addr(bus, slot, func, offset);
     __asm__ volatile ("outl %0, %1" : : "a"(addr), "Nd"(PCI_CONFIG_ADDRESS));
     uint32_t val;
-    __asm__ volatile ("inl %1, %0" : "=a"(val) : "Nd"(PCI_CONFIG_DATA));
+    __asm__ volatile ("inl %1, %0" : "=a"(val) : "Nd"(PCI_CONFIG_DATA)); 
     return val;
 }
 
@@ -26,3 +26,7 @@ static inline uint16_t pci_read_config_word(uint8_t bus, uint8_t slot, uint8_t f
     uint32_t d = pci_read_config_dword(bus, slot, func, offset & 0xFC);
     return (uint16_t)((d >> ((offset & 2) * 8)) & 0xFFFF);
 }
+
+
+void pci_init(void);
+void pci_scan_and_print(void);

@@ -15,6 +15,7 @@
 #include "../core/clock_overlay.h"
 #include "../core/timer.h"
 #include "../core/input/mouse.h"
+#include "scheduler/task_manager.h"
 // ────────────────
 // External Symbols
 // ────────────────
@@ -117,7 +118,7 @@ void init_idt() {
     set_idt_gate(0,  (uint32_t)isr0);   // Divide-by-zero
     set_idt_gate(33, (uint32_t)irq33);  // Keyboard
     set_idt_gate(32, (uint32_t)irq0_handler); // Timer
-    set_idt_gate(44, (uint32_t)irq44); // Mouse IRQ12
+    // set_idt_gate(44, (uint32_t)irq44); // Mouse IRQ12 - Disabled to prevent conflicts
     idt_flush((uint32_t)&idt_ptr);
 }
 
@@ -128,6 +129,9 @@ void timer_handler(struct regs* r) {
     tick_count++;
     inc_ticks();
     clock_tick();
+    
+    /* Task manager timer tick for scheduling */
+    task_timer_tick();
 
     // if(tick_count % 10 == 0) {
     //     // Every second at 100Hz
@@ -209,8 +213,9 @@ void interrupts_system_init(void) {
     register_interrupt_handler(0, divide_by_zero_handler);
     register_interrupt_handler(32, timer_handler);
     register_interrupt_handler(33, keyboard_service_handler);
-    register_interrupt_handler(44, mouse_handler);
+    // register_interrupt_handler(44, mouse_handler); // Disabled to prevent USB/PS2 mouse conflicts
     GFX_LOG_MIN("Keyboard handler registered for IRQ1 (vector 33).\n");
+    GFX_LOG_MIN("Mouse handler disabled (USB mouse in use).\n");
     gfx_print("GDT and IDT setup complete.\n");
 }
 

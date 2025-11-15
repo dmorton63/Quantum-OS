@@ -31,4 +31,8 @@ typedef unsigned long uintptr_t;
 // NULL
 #define NULL ((void*)0)
 
+#ifndef nullptr
+#define nullptr ((void*)0)
+#endif
+
 #endif

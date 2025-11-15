@@ -19,11 +19,11 @@ void message_box_logf(const char* fmt, ...);
 
 #ifdef DEBUG_SERIAL
     #define SERIAL_LOG(msg) do { \
-        if (g_verbosity >= VERBOSITY_VERBOSE) { serial_debug(msg); message_box_log(msg); } \
+        if (g_verbosity >= VERBOSITY_VERBOSE) { serial_debug(msg); } \
     } while (0)
 
     #define SERIAL_LOG_MIN(msg) do { \
-        if (g_verbosity >= VERBOSITY_MINIMAL) { serial_debug(msg); message_box_log(msg); } \
+        if (g_verbosity >= VERBOSITY_MINIMAL) { serial_debug(msg); } \
     } while (0)
 
     #define SERIAL_LOG_HEX(prefix, val) do { \
@@ -31,7 +31,6 @@ void message_box_logf(const char* fmt, ...);
             serial_debug(prefix); \
             serial_debug_hex(val); \
             serial_debug("\n"); \
-            message_box_logf("%s0x%x\n", prefix, val); \
         } \
     } while (0)
 
@@ -40,7 +39,6 @@ void message_box_logf(const char* fmt, ...);
             serial_debug(prefix); \
             serial_debug_decimal(val); \
             serial_debug("\n"); \
-            message_box_logf("%s%u\n", prefix, val); \
         } \
     } while (0)
 #else

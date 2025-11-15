@@ -7,7 +7,7 @@ LD       = i686-elf-ld
 OBJCOPY  = i686-elf-objcopy
 
 # Flags
-CFLAGS   = -std=c99 -ffreestanding -O2 -Wall -Wextra -g \
+CFLAGS   = -std=c99 -ffreestanding -O2 -Wall -Wextra -O0 -g \
            -fno-exceptions -fno-builtin -fno-stack-protector \
            -m32 -nostdlib -nostdinc -mno-red-zone -mno-mmx -mno-sse -mno-sse2 \
            -MMD -MP
@@ -76,22 +76,25 @@ $(BUILD_DIR)/kernel.bin: $(C_OBJS) $(ASM_OBJS) $(QUANTUM_OBJ) $(SRC_DIR)/linker.
 	$(OBJCOPY) -O binary $(BUILD_DIR)/kernel.elf $@
 
 # Create ISO image
-$(BUILD_DIR)/quantum_os.iso: $(BUILD_DIR)/kernel.bin config/grub.cfg
+$(BUILD_DIR)/quantum_os.iso: $(BUILD_DIR)/kernel.bin config/grub.cfg $(ISO_DIR)/splash.png
 	@echo "Creating QuantumOS ISO..."
 	@mkdir -p $(ISO_DIR)/boot/grub
 	@cp $(BUILD_DIR)/kernel.elf $(ISO_DIR)/boot/quantum_os.elf
 	@cp config/grub.cfg $(ISO_DIR)/boot/grub/grub.cfg
 	@grub-mkrescue -o $@ $(ISO_DIR) || echo "GRUB not available — ISO skipped"
 
+# Configuration
+QEMU_CPUS ?= 8
+
 # Run in QEMU
 qemu: $(BUILD_DIR)/quantum_os.iso
-	@echo "Booting QuantumOS in QEMU..."
-	qemu-system-i386 -cdrom $< -m 256M
+	@echo "Booting QuantumOS in QEMU ($(QEMU_CPUS) CPUs)..."
+	qemu-system-i386 -drive file=$<,format=raw,media=cdrom,if=ide -m 256M -vga std -smp $(QEMU_CPUS)
 
 # Debug with GDB
 debug: $(BUILD_DIR)/quantum_os.iso
 	@echo "Starting debugger..."
-	qemu-system-i386 -cdrom $< -m 256M -s -S &
+	qemu-system-i386 -drive file=$<,format=raw,media=cdrom,if=ide -m 256M -vga std -smp $(QEMU_CPUS) -s -S &
 	gdb $(BUILD_DIR)/kernel.elf -ex "target remote :1234"
 
 # Clean build artifacts
