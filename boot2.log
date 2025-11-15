@@ -1,0 +1,177 @@
+[H[J[1;1Herror: can't find command `/*'.
+error: can't find command `*'.
+[?25l[m[H[J[1;1H[2;30HGNU GRUB  version 2.12
+
+[m[4;2H+----------------------------------------------------------------------------+[5;2H|[5;79H|[6;2H|[6;79H|[7;2H|[7;79H|[8;2H|[8;79H|[9;2H|[9;79H|[10;2H|[10;79H|[11;2H|[11;79H|[12;2H|[12;79H|[13;2H|[13;79H|[14;2H|[14;79H|[15;2H|[15;79H|[16;2H|[16;79H|[17;2H+----------------------------------------------------------------------------+[m[18;2H[19;2H[m     Use the ^ and v keys to select which entry is highlighted.          
+      Press enter to boot the selected OS, `e' to edit the commands       
+      before booting or `c' for a command-line.                           [5;80H [m[5;3H QuantumOS (Silent Mode)                                                    [m[5;78H[m[m[6;3H QuantumOS (Normal Mode)                                                    [m[6;78H[m[7m[7;3H*QuantumOS (Verbose Mode)                                                   [m[7;78H[m[m[8;3H Video Test                                                                 [m[8;78H[m[m[9;3H                                                                            [m[9;78H[m[m[10;3H                                                                            [m[10;78H[m[m[11;3H                                                                            [m[11;78H[m[m[12;3H                                                                            [m[12;78H[m[m[13;3H                                                                            [m[13;78H[m[m[14;3H                                                                            [m[14;78H[m[m[15;3H                                                                            [m[15;78H[m[m[16;3H                                                                            [m[16;78H[m[16;80H [7;78H[22;1H   The highlighted entry will be executed automatically in 10s.                [7;78H[22;1H                                                                               [23;1H                                                                               [7;78H[?25h[H[J[1;1H[H[J[1;1H[vmm_init] identity mapping ready
+PDE[0] = 00D62003
+PDE[1] = 00D63003
+Mapping framebuffer: phys=FD000000
+ size=003E8000
+
+Setting up page table for framebuffer...
+FB pages: start=000FD000
+ count=000003E8
+ pde_idx=000003F4
+
+PDE[0] = 00D62003
+PDE[1] = 00D63003
+PDE[0x3F4] = 00D6A003
+
+Enabling paging with PD at: 00D61000
+
+Paging enabled.
+Paging enabled with framebuffer mapping
+Multiboot info assigned
+Verbosity parsed from cmdline
+Lower memory: 639Upper memory: 260992Memory map parsed and PMM initialized
+Framebuffer info parsed and graphics system updated
+GFX_INIT: Starting graphics initializationGFX_INIT: Framebuffer detected at FD000000
+
+GFX_INIT: Framebuffer detected, using framebuffer modeGFX_INIT: Graphics system initializedFB_INIT: Framebuffer available
+FB_INIT: Need 4096000
+ bytes for 1024000
+ pixels
+FB_INIT: Backing store allocated at 9830400
+VIDEO: Initializing video subsystem
+VIDEO: Initializing video drivers
+GFX_INIT: Starting graphics initializationGFX_INIT: Framebuffer detected, using framebuffer modeGFX_INIT: Graphics system initializedVIDEO: Setting video mode
+VIDEO: Framebuffer connected
+VIDEO: Video subsystem initialized successfully
+===EARLY PNG TEST START===
+PNG: decode() called
+PNG: Signature valid
+PNG: Creating image structure
+PNG: Pixel buffer allocated, generating checkerboard
+SUCCESS: PNG image loaded and decoded!
+PNG test complete - image freed
+===EARLY PNG TEST END===
+[KERNEL] About to init filesystem subsystem
+[FILESYSTEM] Subsystem initialized successfully
+[KERNEL] Filesystem subsystem initialized
+[KERNEL] About to initialize VFS
+[KERNEL] VFS init completed
+[KERNEL] ===== INITIALIZING CD-ROM DRIVER =====
+[CDROM] Initializing CD-ROM driver
+[CDROM] Status after IDENTIFY: 0x00
+[CDROM] No CD-ROM drive detected (status invalid)
+[KERNEL] CD-ROM init completed
+[KERNEL] ===== MOUNTING ISO9660 FILESYSTEM =====
+[KERNEL] ISO9660 init completed
+[KERNEL] Searching for cdrom0 device
+[KERNEL] WARNING: CD-ROM device NOT found
+PIC1 mask=0x000000FC
+PIC2 mask=0x000000FF
+PCI: Starting PCI initialization
+PCI: Starting PCI bus scan
+PCI Device found: Bus 00000000
+ Slot 00000000
+ Func 00000000
+ Vendor 00008086
+ Device 00001237
+ Class 00000006
+ Sub 00000000
+ Prog 00000000
+
+PCI Device found: Bus 00000000
+ Slot 00000001
+ Func 00000000
+ Vendor 00008086
+ Device 00007000
+ Class 00000006
+ Sub 00000001
+ Prog 00000000
+
+PCI Device found: Bus 00000000
+ Slot 00000001
+ Func 00000001
+ Vendor 00008086
+ Device 00007010
+ Class 00000001
+ Sub 00000001
+ Prog 00000080
+
+PCI Device found: Bus 00000000
+ Slot 00000001
+ Func 00000003
+ Vendor 00008086
+ Device 00007113
+ Class 00000006
+ Sub 00000080
+ Prog 00000000
+
+PCI Device found: Bus 00000000
+ Slot 00000002
+ Func 00000000
+ Vendor 00001234
+ Device 00001111
+ Class 00000003
+ Sub 00000000
+ Prog 00000000
+
+PCI Device found: Bus 00000000
+ Slot 00000003
+ Func 00000000
+ Vendor 00008086
+ Device 0000100E
+ Class 00000002
+ Sub 00000000
+ Prog 00000000
+
+PCI: PCI initialization complete
+PNG: decode() called
+PNG: Signature valid
+PNG: Creating image structure
+PNG: Pixel buffer allocated, generating checkerboard
+TASK: Initializing task manager with real switching\nTASK: Created task ID=00000001
+ name=idle\nTASK: Started task ID=00000001
+\nTASK: Idle task created and started\nTASK: Task manager initialized with real switching\n\n=== QUANTUM OS TASK MANAGER DEMONSTRATION ===\nInitializing task management system...\n\n✓ Task manager ready\n\n=== RUNNING SIMPLE TASK DEMONSTRATION ===\n\nSTEP 1: Task architecture validation\n  ✓ Task manager initialized successfully\n  ✓ Context switching enabled\n  ✓ Priority scheduling ready\n\nSTEP 2: System capability test\n  Test cycle 1
+: All systems operational\n  Test cycle 2
+: All systems operational\n  Test cycle 3
+: All systems operational\n  ✓ System tests complete\n\nSTEP 3: Final statistics\nTotal tasks created: 1
+\nCurrently active tasks: 1
+\nContext switches: 0
+\n\n=== DEMONSTRATION COMPLETE ===\nThe Quantum OS task manager is fully operational!\n\n*** RETURNING CONTROL TO KERNEL ***\n\n[KERNEL] Scheduler demo completed, continuing...
+[KERNEL] About to print AFTER_SCHEDULER_DEMO
+[KERNEL] Printed AFTER_SCHEDULER_DEMO
+keyboard_service_handler invoked
+scancode=0x00000061
+[KERNEL] Interrupts enabled
+[KERNEL] Keyboard message printed
+[KERNEL] ===== LOADING PNG FROM CD-ROM =====
+[KERNEL] Getting framebuffer info
+[KERNEL] Framebuffer obtained
+[KERNEL] Framebuffer valid, using static PNG buffer
+[KERNEL] Framebuffer cleared to black
+[KERNEL] Reading PNG from ISO9660
+[ISO9660] read_file called
+[ISO9660] ERROR: Filesystem not mounted
+[KERNEL] iso9660_read_file returned: -1
+[KERNEL] Failed to read PNG from CD-ROM
+PNG: Parsing chunks...
+PNG: Total IDAT size: PNG: Width=PNG: Height=PNG: BitDepth=PNG: ColorType=PNG: Copied IDAT chunk
+PNG: Copied IDAT chunk
+PNG: Copied IDAT chunk
+PNG: Copied IDAT chunk
+PNG: Copied IDAT chunk
+PNG: Copied IDAT chunk
+PNG: Copied IDAT chunk
+PNG: Copied IDAT chunk
+PNG: Copied IDAT chunk
+PNG: Copied IDAT chunk
+PNG: Copied IDAT chunk
+PNG: Copied IDAT chunk
+PNG: Copied IDAT chunk
+PNG: Copied IDAT chunk
+PNG: Copied IDAT chunk
+PNG: Copied IDAT chunk
+PNG: Copied IDAT chunk
+PNG: Copied IDAT chunk
+PNG: Copied IDAT chunk
+PNG: Copied IDAT chunk
+PNG: Decompressing image data...
+PNG: Decompressed 612827 bytes. First bytes: 01 00 18 20 00 00 03 00 
+PNG: Image dimensions: PNG: Framebuffer dimensions: PNG: Warning - decompressed size smaller than expected
+PNG: First scanline filter=1, first pixel after unfilter: 00 18 20 
+PNG: Rendering complete!

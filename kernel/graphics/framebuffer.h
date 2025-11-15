@@ -4,6 +4,7 @@
 #include "../core/stdtools.h"
 #include "graphics.h"
 #include "../qarma_win_handle/qarma_win_handle.h"
+
 #define IN_BOUNDS(x, max) ((x) >= 0 && (x) < (int)(max))
 
 
@@ -13,6 +14,16 @@ typedef struct {
     int height;
 } FRAMEBUFFER_LAYER;
 
+typedef struct {
+    uint32_t width;
+    uint32_t height;
+    uint32_t pitch;
+    uint32_t bpp;
+    uint8_t* address;
+} FramebufferInfo;
+
+extern FramebufferInfo* fb_info;
+extern FramebufferInfo* fbinfo;
 
 // Framebuffer functions
 void framebuffer_init(void);

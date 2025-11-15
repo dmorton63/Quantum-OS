@@ -134,4 +134,10 @@ bool quantum_hardware_available(void);
 uint32_t quantum_get_qubit_count(void);
 void quantum_execute_gate(uint32_t qubit, uint32_t gate_type);
 
+// Core management integration
+bool quantum_request_cores(uint32_t count);
+void quantum_release_cores(void);
+uint32_t quantum_get_allocated_cores(void);
+bool quantum_run_on_dedicated_core(void (*function)(void*), void* data);
+
 #endif // QUANTUM_KERNEL_H

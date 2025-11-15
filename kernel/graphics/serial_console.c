@@ -2,8 +2,7 @@
  * QuantumOS - Serial Console Backend
  * Serial port output for debugging and remote console access
  */
-
-#include "../graphics/graphics.h"
+#include "serial_console.h"
 #include "../core/io.h"
 
 #define SERIAL_PORT_A 0x3F8

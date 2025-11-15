@@ -2,11 +2,13 @@
 #include "../graphics/framebuffer.h"
 #include "../qarma_win_handle/qarma_window_manager.h"
 #include "../core/memory.h"
+#include "../graphics/png_decoder.h"
 
 // Extended splash glyph
 typedef struct QARMA_SPLASH_HANDLE {
     QARMA_WIN_HANDLE base;
     float fade_speed;
+    png_image_t* splash_image;
 } QARMA_SPLASH_HANDLE;
 
 // Forward declarations
@@ -45,7 +47,9 @@ QARMA_SPLASH_HANDLE* splash_window_create(const char* title, uint32_t flags) {
         memset(win->pixel_buffer, 0, win->buffer_size.width * win->buffer_size.height * sizeof(uint32_t));
     }
 
-    splash->fade_speed = 1.0f;
+    splash->fade_speed = 0.5f;  // Slower fade for better visibility
+    splash->splash_image = load_splash_image();
+    
     qarma_window_manager.add_window(&qarma_window_manager, win,"Splash Window");
     return splash;
 }
@@ -66,22 +70,63 @@ static void splash_update(QARMA_WIN_HANDLE* self, QARMA_TICK_CONTEXT* ctx) {
 
 // Render logic
 static void splash_render(QARMA_WIN_HANDLE* self) {
-    fb_draw_rect_to_buffer(
-        self->pixel_buffer,
-        self->buffer_size,
-        0, 0,
-        self->buffer_size,
-        self->background
-    );
+    QARMA_SPLASH_HANDLE* splash = (QARMA_SPLASH_HANDLE*)self;
+    
+    if (splash->splash_image && splash->splash_image->pixels) {
+        // Draw the PNG image (simplified version)
+        uint32_t img_w = splash->splash_image->width;
+        uint32_t img_h = splash->splash_image->height;
+        uint32_t win_w = self->buffer_size.width;
+        uint32_t win_h = self->buffer_size.height;
+        
+        // Clear window first
+        memset(self->pixel_buffer, 0, win_w * win_h * sizeof(uint32_t));
+        
+        // Center the image in the window
+        int32_t offset_x = (int32_t)(win_w - img_w) / 2;
+        int32_t offset_y = (int32_t)(win_h - img_h) / 2;
+        
+        // Draw image pixels (simplified - no alpha blending for now)
+        for (uint32_t y = 0; y < img_h && y + offset_y < win_h; y++) {
+            for (uint32_t x = 0; x < img_w && x + offset_x < win_w; x++) {
+                int32_t dst_x = x + offset_x;
+                int32_t dst_y = y + offset_y;
+                
+                if (dst_x >= 0 && dst_y >= 0 && dst_x < (int32_t)win_w && dst_y < (int32_t)win_h) {
+                    uint32_t src_pixel = splash->splash_image->pixels[y * img_w + x];
+                    uint32_t dst_offset = dst_y * win_w + dst_x;
+                    self->pixel_buffer[dst_offset] = src_pixel;
+                }
+            }
+        }
+    } else {
+        // Fallback to colored rectangle if image fails - make it obvious
+        QARMA_COLOR bright_red = {255, 0, 0, 255}; // Bright red to be obvious
+        fb_draw_rect_to_buffer(
+            self->pixel_buffer,
+            self->buffer_size,
+            0, 0,
+            self->buffer_size,
+            bright_red
+        );
+    }
 }
 
 // Destruction ritual
 static void splash_destroy(QARMA_WIN_HANDLE* self) {
+    QARMA_SPLASH_HANDLE* splash = (QARMA_SPLASH_HANDLE*)self;
+    
     qarma_window_manager.remove_window(&qarma_window_manager, self->id);
 
     if (self->pixel_buffer) {
         free(self->pixel_buffer);
         self->pixel_buffer = NULL;
+    }
+    
+    // Free the PNG image
+    if (splash->splash_image) {
+        png_free(splash->splash_image);
+        splash->splash_image = NULL;
     }
 
     free(self);

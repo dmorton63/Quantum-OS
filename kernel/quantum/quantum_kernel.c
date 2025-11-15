@@ -7,10 +7,12 @@
 
 #include "quantum_kernel.h"
 //#include "../core/kernel.h"
+#include "../core/core_manager.h"
 #include "../graphics/graphics.h"
 #include "../config.h"
 #include "../core/clock_overlay.h"
 #include "../core/memory.h"
+#include "../core/memory/heap.h"
 #include "../qarma_win_handle/qarma_window_manager.h"
 
 
@@ -30,23 +32,33 @@ static uint32_t g_qubit_count = 0;
 */
 
 void quantum_kernel_main(uint32_t magic, multiboot_info_t* mbi) {
-    GFX_LOG_MIN("QuantumOS main entry invoked.\n");
-    gfx_print("Starting QuantumOS Quantum Kernel...\n");
+    // Try to output something immediately to see if we get this far
+    // Use direct VGA text mode as a fallback
+    volatile char* vga_buffer = (volatile char*)0xB8000;
+    const char* msg = "BOOT: quantum_kernel_main started";
+    for (int i = 0; msg[i] != '\0'; i++) {
+        vga_buffer[i * 2] = msg[i];
+        vga_buffer[i * 2 + 1] = 0x07; // White on black
+    }
+    
+    // Call the original kernel main
     kernel_main(magic, mbi);
-    quantum_kernel_init();         // Initialize quantum core
-    quantum_drivers_init();        // Load quantum hardware
-    quantum_scheduler_init();      // Prepare scheduler
+    
+    // Don't call quantum functions yet - they might be causing the crash
+    // quantum_kernel_init();         // Initialize quantum core
+    // quantum_drivers_init();        // Load quantum hardware
+    // quantum_scheduler_init();      // Prepare scheduler
 
     // Optionally spawn initial quantum process
-    quantum_process_create("init", 0);
-    qarma_window_manager_init();
-    clock_overlay_init();          // Initialize clock overlay
-    reset_clock();               // Reset clock to 00:00:00
-    // Enter main loop
-    while (true) {
-        quantum_scheduler_tick();
-        // Add sleep, input, or phase-aware logging here
-    }
+    // quantum_process_create("init", 0);
+    // qarma_window_manager_init();
+    // clock_overlay_init();          // Initialize clock overlay
+    // reset_clock();               // Reset clock to 00:00:00
+    
+    // Don't enter the quantum loop yet
+    // while (true) {
+    //     quantum_scheduler_tick();
+    // }
 }
 
 /**
@@ -325,6 +337,30 @@ void quantum_restore_coherence(quantum_process_t* process) {
  */
 quantum_scheduler_stats_t* quantum_get_scheduler_stats(void) {
     return &g_quantum_stats;
+}
+
+// Core management integration
+bool quantum_request_cores(uint32_t count) {
+    core_request_t request = {0};
+    request.subsystem = SUBSYSTEM_QUANTUM;
+    request.core_count = count;
+    request.preferred_numa = 1; // Prefer NUMA node 1
+    request.flags = 0x04; // CORE_ALLOC_SHARED
+    
+    core_response_t response = core_request_allocate(&request);
+    return response.success;
+}
+
+void quantum_release_cores(void) {
+    core_release_all(SUBSYSTEM_QUANTUM);
+}
+
+uint32_t quantum_get_allocated_cores(void) {
+    return core_get_allocated_count(SUBSYSTEM_QUANTUM);
+}
+
+bool quantum_run_on_dedicated_core(void (*function)(void*), void* data) {
+    return core_pin_task_subsystem(SUBSYSTEM_QUANTUM, function, data);
 }
 
 /**

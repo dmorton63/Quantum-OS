@@ -34,6 +34,8 @@ typedef struct vfs_node {
 
 // Register a filesystem driver
 void vfs_register_fs(struct fs_driver* fs);
+// Initialize VFS system
+void vfs_init(void);
 // Mount a filesystem
 int vfs_mount(const char* devname, const char* fstype, const char* mountpoint);
 // Open a file

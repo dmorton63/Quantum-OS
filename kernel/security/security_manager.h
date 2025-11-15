@@ -69,4 +69,10 @@ bool verify_function_integrity(relocation_entry_t* entry);
 // Statistics
 security_stats_t* security_get_stats(void);
 
+// Core management integration
+bool security_request_cores(uint32_t count);
+void security_release_cores(void);
+uint32_t security_get_allocated_cores(void);
+bool security_run_on_dedicated_core(void (*function)(void*), void* data);
+
 #endif // SECURITY_MANAGER_H

@@ -229,6 +229,12 @@ ai_subsystem_stats_t* ai_get_subsystem_stats(void);
 void ai_print_agent_info(ai_agent_t* agent);
 void ai_debug_dump_networks(void);
 
+// Core management integration
+bool ai_request_cores(uint32_t count);
+void ai_release_cores(void);
+uint32_t ai_get_allocated_cores(void);
+bool ai_run_on_dedicated_core(void (*function)(void*), void* data);
+
 // Utility functions
 float sigmoid(float x);
 float tanh_activation(float x);

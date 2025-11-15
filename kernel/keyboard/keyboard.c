@@ -6,6 +6,9 @@
 #include "../core/io.h"
 #include "../graphics/irq_logger.h"
 
+// Global flag for detecting any keypress
+volatile bool key_pressed = false;
+
 // Global keyboard state
 static const char scancode_to_ascii_lower[128] = {
     0,    27,   '1',  '2',  '3',  '4',  '5',  '6',  '7',  '8',  '9',  '0',  '-',  '=',  '\b', '\t', // 0x00-0x0F
@@ -135,7 +138,10 @@ bool keyboard_init(void) {
 
 void keyboard_handler(regs_t* regs, uint8_t scancode) {
 
-
+    // Set global flag for any keypress detection
+    if (!(scancode & KEY_RELEASE)) {
+        key_pressed = true;
+    }
 
     static uint32_t interrupt_count = 0;
     interrupt_count++;

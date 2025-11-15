@@ -51,6 +51,8 @@ extern void framebuffer_clear(void);
 extern void framebuffer_set_cursor(uint32_t x, uint32_t y);
 extern void framebuffer_scroll(void);
 
+static bool serial_is_transmit_ready(void);
+
 extern void serial_putchar(char c);
 
 // Graphics debug using centralized config.h macros

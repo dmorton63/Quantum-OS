@@ -179,6 +179,12 @@ parallel_engine_stats_t* parallel_get_engine_stats(void);
 void parallel_print_core_info(uint32_t core_id);
 void parallel_debug_dump_queues(void);
 
+// Core manager integration hooks
+void parallel_register_core_allocation(uint32_t core_id, uint32_t subsystem_id);
+void parallel_unregister_core_allocation(uint32_t core_id, uint32_t subsystem_id);
+void parallel_update_core_affinity(parallel_task_t* task, uint32_t core_id);
+bool parallel_is_core_busy(uint32_t core_id);
+
 // Atomic operations for lock-free data structures
 uint32_t atomic_compare_exchange(volatile uint32_t* ptr, uint32_t expected, uint32_t desired);
 uint32_t atomic_fetch_add(volatile uint32_t* ptr, uint32_t value);

@@ -10,6 +10,7 @@
 #include "../config.h"
 #include "../core/math.h"
 #include "../core/memory.h"
+#include "../core/memory/heap.h"
 #include "../qarma_win_handle/qarma_win_handle.h"
 #include "../qarma_win_handle/qarma_window_manager.h"
 
@@ -38,6 +39,11 @@ uint32_t fb_pitch = 0;
 uint32_t fb_bpp = 0;
 static uint32_t cursor_x = 0;
 static uint32_t cursor_y = 0;
+
+// Framebuffer info structure instances
+static FramebufferInfo fb_info_instance = {0};
+FramebufferInfo* fb_info = &fb_info_instance;
+FramebufferInfo* fbinfo = &fb_info_instance;
 
 // Use vid_layer font system (8x8 fonts)
 // External font functions from fonts.c
@@ -68,7 +74,7 @@ void framebuffer_init(void) {
         fb_height = pixel_height;
         fb_bpp = info->bpp;
         fb_pitch = info->pitch;
-
+  
         // Boot log framebuffer detection
         BOOT_LOG("Framebuffer detected and configured\n");
         BOOT_LOG_HEX("FB Address: ", (uint32_t)framebuffer_ptr);
@@ -94,6 +100,13 @@ void framebuffer_init(void) {
     info->pitch = fb_pitch;
     info->bpp = fb_bpp;
 
+    
+      fbinfo->width = fb_width;
+      fbinfo->height = fb_height;
+      fbinfo->bpp = fb_bpp;
+      fbinfo->pitch = fb_pitch;
+      fbinfo->address = (uint8_t*)framebuffer_ptr;
+
     // Debug: Show text area dimensions
     BOOT_LOG_DEC("Text cols: ", info->width);
     BOOT_LOG_DEC("Text rows: ", info->height);
@@ -103,7 +116,21 @@ void framebuffer_init(void) {
 
     // Allocate backing store for composition
     size_t pixels = fb_width * fb_height;
-    backing_store = (uint32_t*)malloc(pixels * sizeof(uint32_t));
+    size_t backing_store_size = pixels * sizeof(uint32_t);
+    SERIAL_LOG_DEC("FB_INIT: Need ", backing_store_size);
+    SERIAL_LOG_DEC(" bytes for ", pixels);
+    SERIAL_LOG(" pixels\n");
+    
+    backing_store = (uint32_t*)heap_alloc(backing_store_size);
+    SERIAL_LOG_DEC("FB_INIT: Backing store allocated at ", (uint32_t)(uintptr_t)backing_store);
+    if(!backing_store) {
+        SERIAL_LOG_MIN("FB_INIT: Backing store allocation failed!\n");
+        SERIAL_LOG_DEC("FB_INIT: Requested ", backing_store_size);
+        SERIAL_LOG(" bytes\n");
+        __asm__ volatile("hlt");
+        return;
+
+    }
     if (backing_store) {
         // Initialize backing store with current framebuffer content
         for (uint32_t y = 0; y < fb_height; y++) {

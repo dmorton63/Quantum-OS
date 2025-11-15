@@ -13,6 +13,8 @@
 #include "string.h"
 #include "io.h"
 #include "memory.h"
+#include "../core/memory/pmm/pmm.h"
+
 
 static multiboot_info_t* g_multiboot_info = NULL;
 
@@ -30,7 +32,18 @@ void multiboot_parse_info(uint32_t magic, multiboot_info_t* mbi) {
     debug_buffer_append("Multiboot info assigned\n");
 
     if (mbi->flags & MULTIBOOT_FLAG_CMDLINE) {
-        multiboot_parse_verbosity((const char*)mbi->cmdline);
+        const char *cmd = (const char*)mbi->cmdline;
+        multiboot_parse_verbosity(cmd);
+        /* Parse UHCI-specific boot options (e.g., uhci_clflush=1) */
+        if (strstr(cmd, "uhci_clflush=1")) {
+            extern void uhci_set_clflush_enabled(int);
+            uhci_set_clflush_enabled(1);
+            debug_buffer_append("UHCI: cmdline enabled CLFLUSH\n");
+        } else if (strstr(cmd, "uhci_clflush=0")) {
+            extern void uhci_set_clflush_enabled(int);
+            uhci_set_clflush_enabled(0);
+            debug_buffer_append("UHCI: cmdline disabled CLFLUSH\n");
+        }
     }
 
     if (mbi->flags & MULTIBOOT_FLAG_MEM) {
@@ -142,7 +155,7 @@ void multiboot_detect_vbe_framebuffer(multiboot_info_t* mbi) {
 void multiboot_parse_memory_map(multiboot_info_t* mbi) {
     if (!(mbi->flags & MULTIBOOT_FLAG_MMAP)) return;
 
-    pmm_init();
+    //pmm_init();
     multiboot_memory_map_t* mmap = (multiboot_memory_map_t*)mbi->mmap_addr;
     multiboot_memory_map_t* mmap_end = (multiboot_memory_map_t*)(mbi->mmap_addr + mbi->mmap_length);
 

@@ -4,6 +4,7 @@
 #include "../config.h"
 #include <string.h>
 #include "../core/memory.h"
+#include "../core/memory/heap.h"
 #include "../keyboard/keyboard.h"
 #include "../core/io.h"
 
