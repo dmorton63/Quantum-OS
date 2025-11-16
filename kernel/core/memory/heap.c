@@ -1,7 +1,7 @@
 #include "heap.h"
 #include "../memory/vmm/vmm.h"
 
-#define STATIC_HEAP_SIZE (16 * 1024 * 1024)  // 16MB static heap (enough for PNG buffers)
+#define STATIC_HEAP_SIZE (20 * 1024 * 1024)  // 20MB static heap (enough for ~10 PNG buffers)
 static uint8_t static_heap[STATIC_HEAP_SIZE] __attribute__((aligned(4096)));
 static uint8_t* heap_base = NULL;
 static uint8_t* heap_top  = NULL;
@@ -44,7 +44,8 @@ void* heap_alloc(size_t size) {
 }
 
 void heap_free(void* ptr) {
-    // no-op for now
+    // no-op for now - memory is not reclaimed
+    // With 20MB heap, we can allocate ~10 PNG buffers before running out
     (void)ptr;
 }
 

@@ -86,6 +86,13 @@ void cmd_version(int argc, char** argv);
 void cmd_clear(int argc, char** argv);
 void cmd_exit(int argc, char** argv);
 
+// Network commands
+void cmd_ifconfig(int argc, char** argv);
+void cmd_ifup(int argc, char** argv);
+void cmd_ifdown(int argc, char** argv);
+void cmd_ping(int argc, char** argv);
+void cmd_arp(int argc, char** argv);
+
 int atoi(const char* str);
 // Utility functions
 const char* get_mode_string(shell_mode_t mode);

@@ -10,7 +10,7 @@
 #include "../core/io.h"
 #include "../config.h"
 #include "kernel.h"
-#include "kernel_types.h"
+#include "../../kernel_types.h"
 #include "../keyboard/keyboard_types.h"
 #include "../core/clock_overlay.h"
 #include "../core/timer.h"
@@ -183,8 +183,8 @@ void send_eoi(uint8_t int_no) {
 // ────────────────
 void keyboard_service_handler(regs_t* regs) {
     uint8_t scancode = inb(0x60);
-    SERIAL_LOG("keyboard_service_handler invoked\n");
-    SERIAL_LOG_HEX("scancode=0x", scancode);
+    // SERIAL_LOG("keyboard_service_handler invoked\n");
+    // SERIAL_LOG_HEX("scancode=0x", scancode);
     //uint8_t status = inb(0x64);
     // if (status & 0x01) {
     //     gfx_print("Keyboard has data\n");

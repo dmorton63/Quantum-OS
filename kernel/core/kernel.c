@@ -338,6 +338,14 @@ int kernel_main(uint32_t magic, multiboot_info_t* mbi) {
     // mouse_init();  // TEMPORARILY DISABLED - causes crash/jump
     gfx_print("===CONTINUING AFTER MOUSE===\n");
     
+    // Initialize E1000 network driver AFTER PCI init
+    SERIAL_LOG("[KERNEL] ===== INITIALIZING E1000 NETWORK DRIVER =====\n");
+    gfx_print("Initializing E1000 NIC driver...\n");
+    extern void e1000_init(void);
+    e1000_init();
+    SERIAL_LOG("[KERNEL] E1000 driver init completed\n");
+    gfx_print("E1000 driver initialized.\n");
+    
     // Initialize CD-ROM driver AFTER PCI init (needed to discover IDE/ATAPI)
     SERIAL_LOG("[KERNEL] ===== INITIALIZING CD-ROM DRIVER (POST-PCI) =====\n");
     gfx_print("Initializing CD-ROM driver...\n");

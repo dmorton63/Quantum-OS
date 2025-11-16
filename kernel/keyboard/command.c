@@ -21,6 +21,15 @@ void cmd_help(int argc, char** argv) {
     gfx_print("  cores   - Show CPU core allocation map\n");
     gfx_print("  mempool - Show memory pool statistics\n");
     gfx_print("  splash  - Display splash screen from CD-ROM\n");
+    gfx_print("  kbd     - Keyboard control (enable/disable/status)\n");
+    gfx_print("  pci     - Scan and display PCI devices\n");
+    gfx_print("  vmm     - Test virtual memory manager\n");
+    gfx_print("  icmp    - Send ICMP echo requests\n");
+    gfx_print("  ifconfig - Show network interface information\n");
+    gfx_print("  netstat - Show network statistics\n");
+    gfx_print("  ifup    - Bring network interface up\n");
+    gfx_print("  ifdown  - Bring network interface down\n");
+    gfx_print("  ping    - Send ICMP echo request to host\n");
     gfx_print("  reboot  - Restart the system\n");
 }
 
@@ -233,6 +242,11 @@ static const simple_command_t commands[] = {
     {"pci", cmd_pci},
     {"cores", cmd_cores},
     {"splash", cmd_splash},
+    {"ifconfig", cmd_ifconfig},
+    {"ifup", cmd_ifup},
+    {"ifdown", cmd_ifdown},
+    {"ping", cmd_ping},
+    {"arp", cmd_arp},
     // {"mouse", cmd_mouse},
     {NULL, NULL}
 };
@@ -345,6 +359,89 @@ bool is_valid_command(const char* name) {
 
 bool check_for_command(const char* cmd) {
     return is_valid_command(cmd);
+}
+
+// Network commands
+void cmd_ifconfig(int argc, char** argv) {
+    (void)argc; (void)argv;
+    
+    extern void e1000_print_info(void);
+    e1000_print_info();
+}
+
+void cmd_ifup(int argc, char** argv) {
+    (void)argc; (void)argv;
+    gfx_print("Interface is already up (E1000 auto-initialized)\n");
+}
+
+void cmd_ifdown(int argc, char** argv) {
+    (void)argc; (void)argv;
+    gfx_print("Interface shutdown not implemented\n");
+}
+
+void cmd_ping(int argc, char** argv) {
+    if (argc < 2) {
+        gfx_print("Usage: ping <ip_address>\n");
+        gfx_print("Example: ping 10.0.2.2\n");
+        return;
+    }
+    
+    // Parse IP address
+    const char* ip_str = argv[1];
+    uint8_t ip[4];
+    int parts = 0;
+    int current = 0;
+    
+    for (const char* p = ip_str; *p && parts < 4; p++) {
+        if (*p >= '0' && *p <= '9') {
+            current = current * 10 + (*p - '0');
+        } else if (*p == '.') {
+            ip[parts++] = (uint8_t)current;
+            current = 0;
+        }
+    }
+    if (parts < 4) {
+        ip[parts] = (uint8_t)current;
+    }
+    
+    gfx_print("Pinging ");
+    gfx_print(ip_str);
+    gfx_print(" with 32 bytes of data:\n");
+    gfx_print("(Note: QEMU user-mode networking doesn't respond to ICMP)\n");
+    
+    extern void icmp_send_echo(uint32_t dest_ip);
+    extern void e1000_check_packets(void);
+    
+    uint32_t dest = ((uint32_t)ip[0] << 24) | ((uint32_t)ip[1] << 16) | 
+                    ((uint32_t)ip[2] << 8) | ip[3];
+    
+    // First attempt - may trigger ARP request
+    icmp_send_echo(dest);
+    
+    // Poll for ARP response
+    for (int i = 0; i < 10; i++) {
+        e1000_check_packets();
+        // Small delay
+        for (volatile int j = 0; j < 1000000; j++);
+    }
+    
+    // Second attempt - ARP should be resolved now
+    icmp_send_echo(dest);
+    
+    // Poll for ICMP response
+    for (int i = 0; i < 20; i++) {
+        e1000_check_packets();
+        for (volatile int j = 0; j < 1000000; j++);
+    }
+    
+    gfx_print("\n");
+}
+
+void cmd_arp(int argc, char** argv) {
+    (void)argc; (void)argv;
+    
+    extern void arp_print_cache(void);
+    arp_print_cache();
 }
 
 // Stub functions for compatibility
