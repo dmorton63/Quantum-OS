@@ -93,6 +93,9 @@ void cmd_ifdown(int argc, char** argv);
 void cmd_ping(int argc, char** argv);
 void cmd_arp(int argc, char** argv);
 
+// Pipeline commands
+void cmd_pipeline(int argc, char** argv);
+
 int atoi(const char* str);
 // Utility functions
 const char* get_mode_string(shell_mode_t mode);

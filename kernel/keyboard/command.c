@@ -30,6 +30,7 @@ void cmd_help(int argc, char** argv) {
     gfx_print("  ifup    - Bring network interface up\n");
     gfx_print("  ifdown  - Bring network interface down\n");
     gfx_print("  ping    - Send ICMP echo request to host\n");
+    gfx_print("  pipeline- Test execution pipeline system\n");
     gfx_print("  reboot  - Restart the system\n");
 }
 
@@ -247,6 +248,7 @@ static const simple_command_t commands[] = {
     {"ifdown", cmd_ifdown},
     {"ping", cmd_ping},
     {"arp", cmd_arp},
+    {"pipeline", cmd_pipeline},
     // {"mouse", cmd_mouse},
     {NULL, NULL}
 };
@@ -442,6 +444,13 @@ void cmd_arp(int argc, char** argv) {
     
     extern void arp_print_cache(void);
     arp_print_cache();
+}
+
+void cmd_pipeline(int argc, char** argv) {
+    (void)argc; (void)argv;
+    
+    extern void pipeline_example_test(void);
+    pipeline_example_test();
 }
 
 // Stub functions for compatibility
