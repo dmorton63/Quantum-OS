@@ -228,6 +228,11 @@ int kernel_main(uint32_t magic, multiboot_info_t* mbi) {
     memory_pool_init();
     gfx_print("Memory pool manager initialized.\n");
     
+    // Initialize execution pipeline system
+    extern void pipeline_system_init(void);
+    pipeline_system_init();
+    gfx_print("Execution pipeline system initialized.\n");
+    
     // Initialize video subsystem
     video_subsystem_init(NULL);
     gfx_print("Video subsystem initialized.\n");
